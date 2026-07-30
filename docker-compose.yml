@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: evora-ponto-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evora
+      POSTGRES_PASSWORD: evora
+      POSTGRES_DB: evora_ponto
+    ports:
+      - '5432:5432'
+    volumes:
+      - evora_ponto_pgdata:/var/lib/postgresql/data
+
+volumes:
+  evora_ponto_pgdata:

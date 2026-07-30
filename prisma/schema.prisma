@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Autenticação ----------
+
+model AdminUser {
+  id                 String   @id @default(cuid())
+  username           String   @unique
+  passwordHash       String
+  name               String
+  mustChangePassword Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  justificativasDecididas Justificativa[] @relation("DecididoPor")
+  chamadosRespondidos     Chamado[]       @relation("RespondidoPor")
+}
+
+// Cache local de funcionários, sincronizado a partir do RHiD (GET /person).
+// O CPF é o identificador de login; a senha é local (o RHiD não guarda senha de app).
+model Employee {
+  id                 String   @id @default(cuid())
+  rhidPersonId       Int      @unique
+  cpf                String   @unique // apenas dígitos
+  nome               String
+  cargo              String?
+  unidade            String?
+  passwordHash       String?
+  mustChangePassword Boolean  @default(true)
+  ativo              Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  justificativas Justificativa[]
+  chamados       Chamado[]
+}
+
+// ---------- Justificativas / ajustes de ponto ----------
+// IMPORTANTE: aprovar aqui NÃO grava automaticamente no RHiD.
+// O RHiD não expõe endpoint de escrita para isso (ver README). O lançamento
+// final no RHiD é manual, feito pelo RH na tela de Atribuições em massa do
+// próprio RHiD, usando a exportação gerada por este sistema.
+
+enum JustificativaStatus {
+  PENDENTE
+  EM_ANALISE
+  APROVADO
+  REPROVADO
+}
+
+enum TipoOcorrencia {
+  FALTA
+  ATRASO
+  SEM_SAIDA
+  AJUSTE
+}
+
+model Justificativa {
+  id             String         @id @default(cuid())
+  employee       Employee       @relation(fields: [employeeId], references: [id])
+  employeeId     String
+  dataOcorrencia DateTime       @db.Date
+  tipo           TipoOcorrencia
+  isAjuste       Boolean        @default(false) // true = funcionário pediu ajuste em dia sem pendência detectada
+
+  issueDetectado String? // o que o motor de apuração do RHiD sinalizou (se houver)
+  motivo         String
+  cid            String?
+  gestorNome     String?
+  horaEntradaCorreta     String?
+  horaSaidaCorreta       String?
+  intervaloInicioCorreto String?
+  intervaloFimCorreto    String?
+  comentario     String?
+
+  status           JustificativaStatus @default(PENDENTE)
+  motivoReprovacao String?
+  decididoPor      AdminUser?          @relation("DecididoPor", fields: [decididoPorId], references: [id])
+  decididoPorId    String?
+  decididoEm       DateTime?
+  exportadoParaRhidEm DateTime? // marcado quando o RH confirma que já lançou manualmente no RHiD
+
+  createdAt DateTime @default(now())
+  anexos    Anexo[]
+
+  @@index([employeeId, dataOcorrencia])
+  @@index([status])
+}
+
+// ---------- Chamados com o RH ----------
+
+enum ChamadoStatus {
+  ABERTO
+  ANDAMENTO
+  CONCLUIDO
+}
+
+// Categorias cadastradas pelo RH (tela /admin/configuracoes/categorias)
+model CategoriaChamado {
+  id     String  @id @default(cuid())
+  label  String  @unique
+  ativo  Boolean @default(true)
+  ordem  Int     @default(0)
+
+  chamados Chamado[]
+}
+
+model Chamado {
+  id            String            @id @default(cuid())
+  employee      Employee          @relation(fields: [employeeId], references: [id])
+  employeeId    String
+  categoria     CategoriaChamado  @relation(fields: [categoriaId], references: [id])
+  categoriaId   String
+  descricao     String
+  status        ChamadoStatus     @default(ABERTO)
+  resposta      String?
+  respondidoPor AdminUser?        @relation("RespondidoPor", fields: [respondidoPorId], references: [id])
+  respondidoPorId String?
+  respondidoEm  DateTime?
+  createdAt     DateTime          @default(now())
+
+  anexos Anexo[]
+
+  @@index([status])
+}
+
+model Anexo {
+  id              String         @id @default(cuid())
+  nomeArquivo     String
+  url             String // caminho no storage configurado (local/S3/etc.)
+  justificativa   Justificativa? @relation(fields: [justificativaId], references: [id])
+  justificativaId String?
+  chamado         Chamado?       @relation(fields: [chamadoId], references: [id])
+  chamadoId       String?
+  criadoEm        DateTime       @default(now())
+}
+
+// ---------- Configurações ----------
+
+// Registro único (id fixo = 1). Segredos ficam criptografados (ver src/lib/crypto.ts).
+model ZohoConfig {
+  id                   Int       @id @default(1)
+  clientId             String?
+  clientSecretEnc      String?
+  redirectUri          String?
+  scope                String?   @default("ZohoMail.messages.CREATE,ZohoMail.accounts.READ")
+  refreshTokenEnc      String?
+  accessTokenEnc       String?
+  accessTokenExpiresAt DateTime?
+  connectedEmail       String?
+  updatedAt            DateTime  @updatedAt
+}
+
+// Cache do token de integração do RHiD (evita logar de novo a cada requisição)
+model RhidIntegrationToken {
+  id          Int       @id @default(1)
+  accessToken String?
+  expiresAt   DateTime?
+  updatedAt   DateTime  @updatedAt
+}
