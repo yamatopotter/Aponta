@@ -1,8 +1,12 @@
-# Evora Ponto
+# Evora Ponto (Aponta)
 
 App interno da Evora Farma para funcionários justificarem faltas/atrasos, pedirem
 ajustes de ponto em qualquer data, abrirem chamados com o RH — e para o RH
-revisar, aprovar/reprovar e responder tudo isso num painel (tabela ou kanban).
+revisar, aprovar/reprovar e responder tudo isso num painel (tabela ou kanban),
+com um dashboard de indicadores como porta de entrada.
+
+▶️ [Página de demonstração](https://yamatopotter.github.io/Aponta/) — visão geral
+do produto e das telas, sem dados reais (ver `docs/index.html`).
 
 ## Como isso se encaixa com o RHiD
 
@@ -87,11 +91,30 @@ configura o dia de fechamento do período na aba **Folha** de **Configurações*
 `src/lib/folha.ts`). O cadastro sincronizado do RHiD (nome, CPF, unidade)
 fica listado em **Funcionários**, com busca e filtro por unidade.
 
+## Dashboard de indicadores
+
+`/admin` abre direto em **Dashboard** (`src/app/admin/dashboard/page.tsx`), a
+tela padrão pro RH desde que loga — antes caía em Justificativas. Reúne, com
+filtro de período (últimos 30/90 dias ou mês corrente):
+
+- Justificativas por status e por tipo, e chamados por status.
+- Tempo médio de resposta dos chamados (`Chamado.respondidoEm - createdAt`).
+- Top departamentos por ocorrência de falta/atraso, e funcionários com
+  pendência recorrente (≥3 ocorrências no período).
+- Confirmações da folha do período vigente (reaproveita `src/lib/folha.ts`).
+
+Tudo calculado em `GET /api/admin/dashboard` (agregações via Prisma
+`groupBy`), acessível a qualquer ADMIN (RH ou nível ADMIN — mesmo nível de
+Justificativas/Chamados/Folha/Funcionários). Os gráficos usam `recharts`; as
+cores de status (pendente/aprovado/reprovado, aberto/andamento/concluído)
+são as mesmas dos badges em `src/components/ui/badge.tsx`, pra não ter uma
+paleta nova só pro dashboard.
+
 ## Stack
 
 - **Next.js 14** (App Router) + TypeScript
 - **Prisma + PostgreSQL** — banco próprio do app (não é o banco do RHiD)
-- **Tailwind CSS**
+- **Tailwind CSS** + `recharts` (gráficos do Dashboard)
 - Autenticação própria via cookie assinado (JWT com `jose`), sem depender de
   provedor externo
 
@@ -329,6 +352,7 @@ docs/integrations/rhid-swagger.json   doc oficial da API do RHiD
 src/app/login                    tela de login (funcionário/admin)
 src/app/(employee)/ponto         funcionário: aba Espelho da folha + aba Justificativas
 src/app/(employee)/chamados      funcionário: chamados com o RH
+src/app/admin/dashboard          RH: indicadores (tela padrão de /admin)
 src/app/admin/justificativas     RH: aprovar/reprovar (tabela ou kanban)
 src/app/admin/chamados           RH: responder chamados (tabela ou kanban)
 src/app/admin/folha              RH: quem já confirmou a folha do período
@@ -336,15 +360,19 @@ src/app/admin/funcionarios       RH: lista do cache local sincronizado do RHiD
 src/app/admin/configuracoes      nível ADMIN: RHiD, Folha e Zoho, em abas
   (?tab=rhid|folha|zoho)         (ver src/components/admin/configuracoes/*)
 src/app/admin/administradores    nível ADMIN: criar/gerenciar outros admins
+src/components/admin/dashboard/  StatCard, BreakdownBarChart (recharts), RankingTable
 
 worker/sync-worker.ts        processo separado, sincroniza com o RHiD em loop
 
 src/app/api/auth/zoho/           login via Zoho OAuth (authorize/callback)
 src/app/api/integrations/zoho/   OAuth do Zoho pra envio de e-mail (outro fluxo)
+src/app/api/admin/dashboard/     agregações (groupBy) que alimentam o Dashboard
 
 src/app/api/...              todas as rotas de API (auth, justificativas,
                               chamados, categorias, folha, funcionários,
                               departamentos, administradores, RHiD, Zoho)
+
+docs/index.html               página de demonstração (GitHub Pages), sem dados reais
 ```
 
 ## Documentação técnica
@@ -352,6 +380,20 @@ src/app/api/...              todas as rotas de API (auth, justificativas,
 Para arquitetura, modelo de dados (ER), fluxos (login, justificativa) e
 referência completa dos endpoints de API, veja
 [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
+
+## Página de demonstração (GitHub Pages)
+
+`docs/index.html` é uma landing page estática (HTML/CSS puro, sem build,
+sem dependência externa) que segue a mesma identidade visual do app —
+paleta "Botânico Farmacêutico" (`tailwind.config.ts`/`globals.css`), o
+mesmo `LogoMark` e o mesmo tom das telas reais — pra apresentar o produto
+sem expor tela real nem dado de funcionário/RH de verdade (os números e
+nomes ali são fictícios, de propósito).
+
+Pra publicar: **Settings → Pages → Source: Deploy from a branch → Branch:
+`main` / `docs`** no repositório do GitHub. Depois disso o GitHub Pages
+publica em `https://<usuário>.github.io/<repo>/` a cada push que tocar
+`docs/index.html`.
 
 ## O que ainda falta (próximos passos sugeridos)
 

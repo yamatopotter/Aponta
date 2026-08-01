@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aponta — Ponto, justificativas e chamados com o RH</title>
+<meta name="description" content="Aponta: funcionários resolvem justificativas de ponto e chamados com o RH sem fila; o RH acompanha tudo num dashboard, com integração de leitura ao Control iD (RHiD)." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23546e4e'/%3E%3Cg fill='none' stroke='white' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='50' cy='50' r='34'/%3E%3Cline x1='50' y1='14' x2='50' y2='24'/%3E%3Cpolyline points='33,51 45,63 68,38'/%3E%3C/g%3E%3C/svg%3E" />
+<style>
+  :root{
+    --bg:#f4f3eb;
+    --card:#ffffff;
+    --ink:#1E241D;
+    --inksoft:#5C6456;
+    --line:#E2E1D3;
+    --sidebar:#2C3A28;
+    --primary:#546e4e;
+    --primary-soft:#E3E9DD;
+    --secondary:#6a2f4c;
+    --secondary-soft:#EEDFE6;
+    --info:#3E6B7A;
+    --info-soft:#DCE8EA;
+    --warn:#745425;
+    --warn-soft:#F1E3CC;
+    --danger:#a3402e;
+    --danger-soft:#F2DCD5;
+    --radius:18px;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;
+  }
+  a{ color:inherit; }
+  img,svg{ display:block; max-width:100%; }
+  /* padding-left/right (não o shorthand padding) pra não zerar o padding
+     vertical de section{} quando as duas classes ficam no mesmo elemento */
+  .wrap{ max-width:1120px; margin:0 auto; padding-left:24px; padding-right:24px; }
+
+  /* ---- Top nav ---- */
+  header.nav{
+    position:sticky; top:0; z-index:20;
+    background:rgba(244,243,235,0.9);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:1120px; margin:0 auto; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:15px; }
+  .brand .mark{
+    width:32px; height:32px; border-radius:9px; background:var(--primary);
+    display:flex; align-items:center; justify-content:center; padding:6px; flex-shrink:0;
+  }
+  .brand .mark svg{ width:100%; height:100%; }
+  .nav-links{ display:flex; align-items:center; gap:22px; font-size:13.5px; font-weight:600; color:var(--inksoft); }
+  .nav-links a:hover{ color:var(--ink); }
+  .nav-links .cta{
+    background:var(--primary); color:#fff; padding:9px 16px; border-radius:999px;
+    font-weight:700; text-decoration:none;
+  }
+  @media (max-width:680px){ .nav-links a:not(.cta){ display:none; } }
+
+  /* ---- Hero ---- */
+  .hero{ padding:76px 0 40px; text-align:center; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--primary-soft); color:#3b4e37; font-weight:700; font-size:12px;
+    padding:6px 13px; border-radius:999px; margin-bottom:22px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:999px; background:var(--primary); }
+  h1{ font-size:clamp(30px,5vw,48px); font-weight:800; letter-spacing:-0.02em; line-height:1.12; margin:0 0 18px; }
+  h1 .accent{ color:var(--primary); }
+  .lede{ max-width:640px; margin:0 auto 30px; color:var(--inksoft); font-size:17px; }
+  .hero-ctas{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:14px; }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:12px 22px; border-radius:12px; font-weight:700; font-size:14px;
+    text-decoration:none; border:1px solid transparent; cursor:pointer;
+  }
+  .btn-primary{ background:var(--primary); color:#fff; }
+  .btn-outline{ background:var(--card); color:var(--ink); border-color:var(--line); }
+  .fineprint{ color:var(--inksoft); font-size:12px; }
+
+  .stack-strip{ display:flex; flex-wrap:wrap; gap:9px; justify-content:center; margin:34px 0 0; }
+  .pill{
+    font-size:12px; font-weight:700; color:var(--inksoft); background:#fff;
+    border:1px solid var(--line); padding:6px 13px; border-radius:999px;
+  }
+
+  /* ---- Mockup ---- */
+  .mockup-wrap{ margin:56px 0 12px; }
+  .browser{
+    background:var(--card); border:1px solid var(--line); border-radius:20px;
+    overflow:hidden; box-shadow:0 30px 60px -20px rgba(30,36,29,0.25);
+  }
+  .browser-bar{
+    display:flex; align-items:center; gap:6px; padding:11px 16px;
+    border-bottom:1px solid var(--line); background:#faf9f4;
+  }
+  .browser-bar .dot{ width:9px; height:9px; border-radius:999px; background:var(--line); }
+  .browser-body{ display:flex; min-height:420px; }
+  .mock-sidebar{
+    width:190px; flex-shrink:0; background:var(--sidebar); color:#fff; padding:18px 14px;
+    display:flex; flex-direction:column; gap:3px;
+  }
+  .mock-sidebar .msbrand{ display:flex; align-items:center; gap:8px; padding:0 8px 16px; font-weight:800; font-size:12.5px; }
+  .mock-sidebar .msbrand .mark{ width:22px;height:22px;border-radius:6px;background:var(--primary);padding:4px; }
+  .mock-nav-item{
+    display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:9px;
+    font-size:11.5px; font-weight:700; color:rgba(255,255,255,0.65);
+  }
+  .mock-nav-item.active{ background:rgba(255,255,255,0.1); color:#fff; }
+  .mock-nav-item .ico{ width:13px; height:13px; border-radius:4px; background:currentColor; opacity:0.55; flex-shrink:0; }
+  .mock-main{ flex:1; padding:22px 24px; min-width:0; }
+  .mock-title{ font-weight:800; font-size:16px; margin-bottom:2px; }
+  .mock-sub{ color:var(--inksoft); font-size:11.5px; margin-bottom:16px; }
+  .mock-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+  .mock-stat{ background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px; }
+  .mock-stat .l{ font-size:10px; font-weight:700; color:var(--inksoft); }
+  .mock-stat .v{ font-size:19px; font-weight:800; margin-top:4px; }
+  .mock-panels{ display:grid; grid-template-columns:1.1fr 1fr; gap:10px; }
+  .mock-panel{ background:var(--card); border:1px solid var(--line); border-radius:13px; padding:14px; }
+  .mock-panel h4{ margin:0 0 2px; font-size:12px; }
+  .mock-panel p{ margin:0 0 10px; font-size:10.5px; color:var(--inksoft); }
+  .bar-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:10.5px; font-weight:700; }
+  .bar-row .lbl{ width:64px; flex-shrink:0; color:var(--inksoft); }
+  .bar-row .track{ flex:1; background:var(--bg); border-radius:5px; overflow:hidden; height:9px; }
+  .bar-row .fill{ height:100%; border-radius:5px; }
+  .bar-row .val{ width:16px; text-align:right; flex-shrink:0; }
+  .rank-row{ display:flex; justify-content:space-between; font-size:10.5px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .rank-row:last-child{ border-bottom:none; }
+  .rank-row .name{ font-weight:700; }
+  .rank-row .sub{ color:var(--inksoft); font-size:9.5px; }
+  .mock-caption{ text-align:center; color:var(--inksoft); font-size:12px; margin-top:14px; }
+
+  /* ---- Phone mockups (funcionário) ---- */
+  .phones-row{ display:flex; gap:36px; justify-content:center; flex-wrap:wrap; margin-top:48px; }
+  .phone{ width:250px; background:#14170f; border-radius:34px; padding:8px; box-shadow:0 30px 60px -24px rgba(30,36,29,0.35); flex-shrink:0; }
+  .phone-notch{ height:16px; display:flex; align-items:center; justify-content:center; }
+  .phone-notch::after{ content:''; width:60px; height:5px; border-radius:999px; background:#333; }
+  .phone-screen{ background:var(--card); border-radius:26px; overflow:hidden; height:430px; display:flex; flex-direction:column; }
+  .ph-header{ display:flex; align-items:center; gap:8px; padding:14px 14px 10px; border-bottom:1px solid var(--line); flex-shrink:0; }
+  .ph-avatar{ width:26px; height:26px; border-radius:999px; background:var(--primary-soft); color:var(--primary); font-size:9.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ph-header .hi{ font-weight:800; font-size:12px; flex:1; }
+  .ph-header .out{ font-size:9.5px; font-weight:700; color:var(--inksoft); }
+  .ph-tabs{ display:flex; gap:4px; background:var(--bg); border-radius:10px; padding:3px; margin:12px 14px 10px; flex-shrink:0; }
+  .ph-tab{ flex:1; text-align:center; font-size:9.5px; font-weight:700; padding:6px 0; border-radius:8px; color:var(--inksoft); }
+  .ph-tab.active{ background:var(--card); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+  .ph-body{ flex:1; overflow:hidden; padding:0 14px; display:flex; flex-direction:column; gap:7px; position:relative; }
+  .ph-card{ border:1px solid var(--line); border-radius:11px; padding:9px 10px; }
+  .ph-card .top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
+  .ph-card .meta{ font-size:9px; font-weight:700; color:var(--inksoft); }
+  .ph-card .chip{ font-size:8px; font-weight:800; padding:2.5px 7px; border-radius:999px; }
+  .ph-card .motivo{ font-size:10.5px; font-weight:700; }
+  .ph-fab{ position:absolute; right:0; bottom:6px; display:flex; align-items:center; gap:4px; background:var(--primary); color:#fff; font-size:9px; font-weight:800; padding:7px 11px; border-radius:999px; box-shadow:0 6px 14px -4px rgba(84,110,78,0.6); }
+  .ph-nav{ display:flex; border-top:1px solid var(--line); flex-shrink:0; position:relative; }
+  .ph-nav .ind{ position:absolute; top:0; height:2px; width:50%; background:var(--primary); }
+  .ph-nav .item{ flex:1; text-align:center; padding:9px 0 8px; font-size:8.5px; font-weight:800; color:var(--inksoft); }
+  .ph-nav .item.active{ color:var(--primary); }
+  .ph-nav .item.active.sec{ color:var(--secondary); }
+  .ph-nav .item .dot-ico{ width:15px; height:15px; margin:0 auto 3px; border-radius:5px; background:currentColor; opacity:0.55; }
+
+  .chat-msg{ max-width:80%; padding:7px 10px; border-radius:12px; font-size:10px; line-height:1.4; }
+  .chat-msg.in{ align-self:flex-start; background:var(--bg); border:1px solid var(--line); border-bottom-left-radius:3px; }
+  .chat-msg.out{ align-self:flex-end; background:var(--primary-soft); color:#3b4e37; border-bottom-right-radius:3px; }
+  .chat-msg .who{ display:block; font-size:8px; font-weight:800; color:var(--inksoft); margin-bottom:2px; }
+  .ph-input{ display:flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:999px; padding:6px 6px 6px 12px; font-size:9.5px; color:var(--inksoft); margin:8px 0; }
+  .ph-input .send{ width:22px; height:22px; border-radius:999px; background:var(--secondary); flex-shrink:0; }
+
+  /* ---- Sections ---- */
+  section{ padding:64px 0; }
+  .section-head{ text-align:center; max-width:640px; margin:0 auto 40px; }
+  .kicker{ color:var(--primary); font-weight:800; font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px; }
+  h2{ font-size:clamp(24px,3.4vw,32px); font-weight:800; letter-spacing:-0.01em; margin:0 0 12px; }
+  .section-head p{ color:var(--inksoft); font-size:15px; margin:0; }
+
+  .grid-2{ display:grid; grid-template-columns:repeat(2,1fr); gap:36px; }
+  .persona{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:28px; }
+  .persona .tag{ display:inline-block; font-size:11.5px; font-weight:800; padding:5px 11px; border-radius:999px; margin-bottom:14px; }
+  .persona.func .tag{ background:var(--info-soft); color:var(--info); }
+  .persona.rh .tag{ background:var(--secondary-soft); color:var(--secondary); }
+  .persona h3{ font-size:19px; margin:0 0 14px; }
+  .persona ul{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:11px; }
+  .persona li{ display:flex; gap:10px; font-size:14px; color:var(--inksoft); }
+  .persona li .chk{ flex-shrink:0; width:18px; height:18px; border-radius:6px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .persona li .chk svg{ width:11px; height:11px; }
+  .persona li b{ color:var(--ink); }
+
+  .feature-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .feature{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; }
+  .feature .ico{
+    width:38px; height:38px; border-radius:10px; background:var(--primary-soft); color:var(--primary);
+    display:flex; align-items:center; justify-content:center; margin-bottom:14px;
+  }
+  .feature .ico svg{ width:19px; height:19px; }
+  .feature h4{ font-size:14.5px; margin:0 0 6px; }
+  .feature p{ font-size:13px; color:var(--inksoft); margin:0; line-height:1.55; }
+
+  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; counter-reset:step; }
+  .step{ position:relative; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px 20px; }
+  .step .n{
+    width:30px; height:30px; border-radius:999px; background:var(--sidebar); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; margin-bottom:14px;
+  }
+  .step h4{ font-size:14.5px; margin:0 0 6px; }
+  .step p{ font-size:13px; color:var(--inksoft); margin:0; line-height:1.55; }
+
+  .cta-band{
+    background:var(--sidebar); color:#fff; border-radius:24px; padding:46px 34px; text-align:center;
+  }
+  .cta-band h2{ color:#fff; }
+  .cta-band p{ color:rgba(255,255,255,0.7); max-width:480px; margin:0 auto 24px; font-size:15px; }
+  .cta-band .btn-primary{ background:#fff; color:var(--sidebar); }
+  .cta-band .btn-outline{ background:transparent; color:#fff; border-color:rgba(255,255,255,0.25); }
+
+  footer{ border-top:1px solid var(--line); padding:32px 0; }
+  .foot-inner{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+  .foot-inner .l{ font-size:12.5px; color:var(--inksoft); }
+  .foot-inner .r{ display:flex; gap:18px; font-size:12.5px; font-weight:700; color:var(--inksoft); }
+
+  @media (max-width:820px){
+    .grid-2, .feature-grid, .steps, .mock-stats{ grid-template-columns:1fr; }
+    .mock-panels{ grid-template-columns:1fr; }
+    .browser-body{ flex-direction:column; }
+    .mock-sidebar{ width:100%; flex-direction:row; align-items:center; overflow-x:auto; }
+    .mock-sidebar .msbrand{ padding:0 10px 0 0; }
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#15170f;
+      --card:#1c1f16;
+      --ink:#f3f2ea;
+      --inksoft:#a9ab9c;
+      --line:#33362a;
+    }
+    header.nav{ background:rgba(21,23,15,0.85); }
+    .pill{ background:var(--card); }
+    .browser-bar{ background:#171911; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <span class="mark">
+        <svg viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="34"/><line x1="50" y1="14" x2="50" y2="24"/><polyline points="33,51 45,63 68,38"/></svg>
+      </span>
+      Aponta
+    </div>
+    <nav class="nav-links">
+      <a href="#produto">Produto</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#stack">Stack</a>
+      <a class="cta" href="https://github.com/yamatopotter/Aponta" target="_blank" rel="noopener">Ver no GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <span class="eyebrow"><span class="dot"></span> Projeto interno · Evora Farma</span>
+    <h1>Ponto, justificativas e chamados<br class="br-desktop"> sem fila no <span class="accent">RH</span>.</h1>
+    <p class="lede">
+      O Control iD continua sendo a fonte da verdade da apuração de ponto — o Aponta
+      é a camada por cima: funcionário resolve tudo sozinho, sem senha, e o RH
+      acompanha em um dashboard, sem planilha, sem fila de atendimento.
+    </p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="https://github.com/yamatopotter/Aponta" target="_blank" rel="noopener">Ver o código no GitHub</a>
+      <a class="btn btn-outline" href="#como-funciona">Como funciona</a>
+    </div>
+    <p class="fineprint">App interno — não é um produto aberto a cadastro público.</p>
+    <div class="stack-strip">
+      <span class="pill">Next.js 14</span>
+      <span class="pill">TypeScript</span>
+      <span class="pill">Prisma</span>
+      <span class="pill">PostgreSQL</span>
+      <span class="pill">Tailwind CSS</span>
+      <span class="pill">Docker</span>
+    </div>
+
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <div class="browser-body">
+          <aside class="mock-sidebar">
+            <div class="msbrand">
+              <span class="mark">
+                <svg viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="34"/><line x1="50" y1="14" x2="50" y2="24"/><polyline points="33,51 45,63 68,38"/></svg>
+              </span>
+              Evora Farma
+            </div>
+            <div class="mock-nav-item active"><span class="ico"></span>Dashboard</div>
+            <div class="mock-nav-item"><span class="ico"></span>Justificativas</div>
+            <div class="mock-nav-item"><span class="ico"></span>Chamados RH</div>
+            <div class="mock-nav-item"><span class="ico"></span>Folha de Ponto</div>
+            <div class="mock-nav-item"><span class="ico"></span>Funcionários</div>
+          </aside>
+          <div class="mock-main">
+            <div class="mock-title">Dashboard</div>
+            <div class="mock-sub">Visão geral de justificativas, chamados e folha.</div>
+            <div class="mock-stats">
+              <div class="mock-stat"><div class="l">Justificativas no período</div><div class="v">34</div></div>
+              <div class="mock-stat"><div class="l">Chamados no período</div><div class="v">21</div></div>
+              <div class="mock-stat"><div class="l">Tempo médio de resposta</div><div class="v">3.2h</div></div>
+              <div class="mock-stat"><div class="l">Folha confirmada</div><div class="v">87%</div></div>
+            </div>
+            <div class="mock-panels">
+              <div class="mock-panel">
+                <h4>Justificativas por status</h4>
+                <p>Volume por status no período selecionado.</p>
+                <div class="bar-row"><span class="lbl">Pendente</span><span class="track"><span class="fill" style="width:55%;background:var(--warn)"></span></span><span class="val">11</span></div>
+                <div class="bar-row"><span class="lbl">Aprovado</span><span class="track"><span class="fill" style="width:90%;background:var(--primary)"></span></span><span class="val">18</span></div>
+                <div class="bar-row"><span class="lbl">Reprovado</span><span class="track"><span class="fill" style="width:25%;background:var(--danger)"></span></span><span class="val">5</span></div>
+              </div>
+              <div class="mock-panel">
+                <h4>Top departamentos</h4>
+                <p>Mais ocorrências de falta/atraso.</p>
+                <div class="rank-row"><span class="name">Produção</span><b>9</b></div>
+                <div class="rank-row"><span class="name">Logística</span><b>6</b></div>
+                <div class="rank-row"><span class="name">Comercial</span><b>4</b></div>
+                <div class="rank-row"><span class="name">Administrativo</span><b>2</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mock-caption">Recriação ilustrativa da tela real — nomes e números são fictícios.</p>
+    </div>
+  </section>
+
+  <section id="produto" class="wrap">
+    <div class="section-head">
+      <div class="kicker">Duas visões, um só app</div>
+      <h2>Feito pra quem pede e pra quem aprova</h2>
+      <p>O mesmo login por CPF que o funcionário já usa no ponto, e um painel dedicado pro RH tratar tudo o que chega.</p>
+    </div>
+    <div class="grid-2">
+      <div class="persona func">
+        <span class="tag">Funcionário</span>
+        <h3>Resolve sozinho, sem fila</h3>
+        <ul>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> Login só com <b>CPF</b>, sem senha pra decorar.</li>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> <b>Espelho da folha</b> com confirmação de um clique.</li>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> Dias com pendência já vêm com atalho pra justificar.</li>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> Chamado com o RH em thread, com anexo.</li>
+        </ul>
+      </div>
+      <div class="persona rh">
+        <span class="tag">RH</span>
+        <h3>Acompanha tudo, sem planilha</h3>
+        <ul>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> <b>Dashboard</b> com indicadores por período.</li>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> Filas de Justificativas e Chamados, em <b>tabela ou kanban</b>.</li>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> Dois níveis de acesso: <b>RH</b> (atendimento) e <b>Admin</b> (configuração).</li>
+          <li><span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="4,12 10,18 20,6"/></svg></span> Cadastro de pessoas sincronizado do RHiD, sempre atualizado.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phones-row">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="ph-header">
+            <span class="ph-avatar">CF</span>
+            <span class="hi">Olá, Camila</span>
+            <span class="out">Sair</span>
+          </div>
+          <div class="ph-tabs">
+            <span class="ph-tab active">Justificativas</span>
+            <span class="ph-tab">Espelho da folha</span>
+          </div>
+          <div class="ph-body">
+            <div class="ph-card">
+              <div class="top"><span class="meta">22/07 · Atraso</span><span class="chip" style="background:var(--warn-soft);color:var(--warn)">Pendente</span></div>
+              <div class="motivo">Consulta médica</div>
+            </div>
+            <div class="ph-card">
+              <div class="top"><span class="meta">15/07 · Falta</span><span class="chip" style="background:var(--primary-soft);color:var(--primary)">Aprovado</span></div>
+              <div class="motivo">Atestado médico</div>
+            </div>
+            <div class="ph-card">
+              <div class="top"><span class="meta">03/07 · Ajuste</span><span class="chip" style="background:var(--info-soft);color:var(--info)">Em análise</span></div>
+              <div class="motivo">Esqueci de bater a saída</div>
+            </div>
+            <span class="ph-fab">+ Justificar / ajustar</span>
+          </div>
+          <div class="ph-nav">
+            <span class="ind" style="transform:translateX(0%)"></span>
+            <span class="item active"><span class="dot-ico"></span>Meu Ponto</span>
+            <span class="item"><span class="dot-ico"></span>Chamados RH</span>
+          </div>
+        </div>
+        <p class="mock-caption">Meu Ponto — justificativas e ajustes</p>
+      </div>
+
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="ph-header">
+            <span class="ph-avatar">CF</span>
+            <span class="hi">Chamados RH</span>
+            <span class="out">Sair</span>
+          </div>
+          <div class="ph-body" style="padding-top:12px;display:flex;flex-direction:column;">
+            <div class="ph-card" style="margin-bottom:2px;">
+              <div class="top"><span class="meta">Acesso ao sistema de férias</span><span class="chip" style="background:var(--secondary-soft);color:var(--secondary)">Em andamento</span></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:7px;overflow:hidden;padding:8px 2px;">
+              <div class="chat-msg in"><span class="who">RH · Jade</span>Oi, Camila! Vou verificar seu acesso e já te retorno.</div>
+              <div class="chat-msg out"><span class="who">Você</span>Perfeito, obrigada!</div>
+              <div class="chat-msg in"><span class="who">RH · Jade</span>Liberado 🙂 tenta de novo e me avisa.</div>
+            </div>
+            <div class="ph-input">Escrever mensagem... <span class="send"></span></div>
+          </div>
+          <div class="ph-nav">
+            <span class="ind" style="transform:translateX(100%);background:var(--secondary)"></span>
+            <span class="item"><span class="dot-ico"></span>Meu Ponto</span>
+            <span class="item active sec"><span class="dot-ico"></span>Chamados RH</span>
+          </div>
+        </div>
+        <p class="mock-caption">Chamados RH — conversa em thread</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="section-head">
+      <div class="kicker">O que já vem pronto</div>
+      <h2>Feito sob medida pro dia a dia do RH</h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 3v3M16 3v3"/></svg></span>
+        <h4>Folha e assinatura</h4>
+        <p>Período de fechamento configurável; funcionário confirma que está tudo certo com um clique.</p>
+      </div>
+      <div class="feature">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h9l5 5v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 4v5h5"/></svg></span>
+        <h4>Justificativas</h4>
+        <p>Falta, atraso, sem saída ou ajuste avulso — com histórico de decisão e motivo de reprovação.</p>
+      </div>
+      <div class="feature">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <h4>Chamados em thread</h4>
+        <p>Conversa completa entre funcionário e RH, com anexos e mudança de status registrada.</p>
+      </div>
+      <div class="feature">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 4 5-8"/></svg></span>
+        <h4>Dashboard de indicadores</h4>
+        <p>Status, tipo de ocorrência, tempo de resposta, ranking de departamentos e pendência recorrente.</p>
+      </div>
+      <div class="feature">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/><path d="M12 3a9 9 0 0 0 0 18"/></svg></span>
+        <h4>Integração RHiD</h4>
+        <p>Lê pessoas e apuração de ponto do Control iD — o Aponta nunca escreve de volta, é só leitura.</p>
+      </div>
+      <div class="feature">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <h4>Dois níveis de acesso</h4>
+        <p>RH cuida do atendimento; Admin também mexe em integrações e gerencia outros administradores.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="como-funciona" class="wrap">
+    <div class="section-head">
+      <div class="kicker">Como funciona</div>
+      <h2>O Control iD continua sendo a fonte da verdade</h2>
+      <p>O Aponta não substitui a apuração de ponto — ele organiza tudo o que hoje vira mensagem solta ou planilha.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <h4>RHiD apura o ponto</h4>
+        <p>Marcações e cálculo de horas continuam 100% no Control iD, como já é hoje.</p>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <h4>Aponta lê e organiza</h4>
+        <p>Sincroniza pessoas e apuração, sinaliza pendência e recebe pedido de justificativa/ajuste.</p>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <h4>RH decide, todo mundo acompanha</h4>
+        <p>Aprovação fica registrada com autor e data; o dashboard mostra o quadro geral em tempo real.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="stack" class="wrap">
+    <div class="cta-band">
+      <h2>Curioso sobre a implementação?</h2>
+      <p>Código aberto no repositório, com documentação de arquitetura, modelo de dados e todos os endpoints da API.</p>
+      <div class="hero-ctas" style="margin-bottom:0;">
+        <a class="btn btn-primary" href="https://github.com/yamatopotter/Aponta" target="_blank" rel="noopener">Explorar o repositório</a>
+        <a class="btn btn-outline" href="https://github.com/yamatopotter/Aponta/blob/main/docs/ARQUITETURA.md" target="_blank" rel="noopener">Ver arquitetura</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <span class="l">Aponta — projeto interno da Evora Farma. Página de demonstração, sem dados reais.</span>
+    <span class="r">
+      <a href="https://github.com/yamatopotter/Aponta" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/yamatopotter/Aponta/blob/main/README.md" target="_blank" rel="noopener">README</a>
+    </span>
+  </div>
+</footer>
+
+</body>
+</html>
