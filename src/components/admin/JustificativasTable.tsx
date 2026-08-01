@@ -1,14 +1,18 @@
 'use client';
 
+import { ArrowRight } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { JustificativaAdmin } from './JustificativaDetailModal';
 
 const TIPO_LABEL = { FALTA: 'Falta', ATRASO: 'Atraso', SEM_SAIDA: 'Sem saída', AJUSTE: 'Ajuste' };
 const STATUS_LABEL = { PENDENTE: 'Pendente', EM_ANALISE: 'Pendente', APROVADO: 'Aprovado', REPROVADO: 'Reprovado' };
-const STATUS_STYLE = {
-  PENDENTE: 'bg-warn-soft text-warn',
-  EM_ANALISE: 'bg-warn-soft text-warn',
-  APROVADO: 'bg-primary-soft text-primary',
-  REPROVADO: 'bg-danger-soft text-danger',
+const STATUS_VARIANT: Record<JustificativaAdmin['status'], 'warn' | 'default' | 'destructive'> = {
+  PENDENTE: 'warn',
+  EM_ANALISE: 'warn',
+  APROVADO: 'default',
+  REPROVADO: 'destructive',
 };
 
 export default function JustificativasTable({
@@ -23,40 +27,43 @@ export default function JustificativasTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-[13.5px]">
-        <thead>
-          <tr className="text-left text-[11px] uppercase tracking-wide text-inksoft border-b border-line">
-            <th className="pb-2.5">Funcionário</th>
-            <th className="pb-2.5">Tipo</th>
-            <th className="pb-2.5">Data</th>
-            <th className="pb-2.5">Motivo</th>
-            <th className="pb-2.5">Unidade</th>
-            <th className="pb-2.5">Status</th>
-            <th className="pb-2.5"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((j) => (
-            <tr key={j.id} className="border-b border-line hover:bg-muted cursor-pointer" onClick={() => onOpen(j)}>
-              <td className="py-3">
-                <div className="font-bold">{j.employee.nome}</div>
-                <div className="text-xs text-inksoft">{j.employee.cargo}</div>
-              </td>
-              <td>{TIPO_LABEL[j.tipo]}</td>
-              <td>{new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')}</td>
-              <td className="max-w-[220px] truncate">{j.motivo}</td>
-              <td>{j.employee.unidade}</td>
-              <td>
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_STYLE[j.status]}`}>
-                  {STATUS_LABEL[j.status]}
-                </span>
-              </td>
-              <td className="text-right text-info text-xs font-bold">Ver detalhes →</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>Funcionário</TableHead>
+          <TableHead>Tipo</TableHead>
+          <TableHead>Data</TableHead>
+          <TableHead>Motivo</TableHead>
+          <TableHead>Unidade</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((j) => (
+          <TableRow key={j.id} className="cursor-pointer" onClick={() => onOpen(j)}>
+            <TableCell>
+              <div className="font-bold">{j.employee.nome}</div>
+              <div className="text-xs text-inksoft">{j.employee.cargo}</div>
+            </TableCell>
+            <TableCell>{TIPO_LABEL[j.tipo]}</TableCell>
+            <TableCell>{new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')}</TableCell>
+            <TableCell className="max-w-[220px] truncate">{j.motivo}</TableCell>
+            <TableCell>{j.employee.unidade}</TableCell>
+            <TableCell>
+              <Badge variant={STATUS_VARIANT[j.status]}>{STATUS_LABEL[j.status]}</Badge>
+              {j.decididoPor && (
+                <div className="text-[11px] text-inksoft mt-1">por {j.decididoPor.name}</div>
+              )}
+            </TableCell>
+            <TableCell className="text-right text-info text-xs font-bold">
+              <span className="inline-flex items-center gap-1">
+                Ver detalhes <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

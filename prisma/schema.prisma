@@ -9,35 +9,81 @@ datasource db {
 
 // ---------- Autenticação ----------
 
-model AdminUser {
-  id                 String   @id @default(cuid())
-  username           String   @unique
-  passwordHash       String
-  name               String
-  mustChangePassword Boolean  @default(true)
-  createdAt          DateTime @default(now())
+// RH: só atendimento (justificativas, chamados, folha, funcionários).
+// ADMIN: além disso, acesso a Configurações e à gestão de outros admins.
+// Ver src/middleware.ts e src/lib/auth.ts (requireNivelAdmin).
+enum NivelAdmin {
+  RH
+  ADMIN
+}
 
-  justificativasDecididas Justificativa[] @relation("DecididoPor")
-  chamadosRespondidos     Chamado[]       @relation("RespondidoPor")
+// Login de admin tem dois caminhos possíveis (ver README):
+// - usuário + senha: username e passwordHash preenchidos.
+// - Zoho OAuth: só email preenchido, sem senha nenhuma — quem faz "Entrar
+//   com Zoho" e não tem e-mail cadastrado aqui é barrado (ver
+//   /api/auth/zoho/callback). Uma conta usa um caminho OU o outro.
+model AdminUser {
+  id                 String     @id @default(cuid())
+  username           String?    @unique
+  email              String?    @unique
+  passwordHash       String?
+  name               String
+  nivel              NivelAdmin @default(RH)
+  ativo              Boolean    @default(true) // desativado em vez de excluído — preserva o histórico (decididoPor, autor etc.)
+  mustChangePassword Boolean    @default(true)
+  createdAt          DateTime   @default(now())
+
+  justificativasDecididas Justificativa[]    @relation("DecididoPor")
+  chamadosRespondidos     Chamado[]          @relation("RespondidoPor")
+  chamadoInteracoes       ChamadoInteracao[]
 }
 
 // Cache local de funcionários, sincronizado a partir do RHiD (GET /person).
-// O CPF é o identificador de login; a senha é local (o RHiD não guarda senha de app).
+// O CPF é o identificador de login. Não há senha: ver nota de segurança no
+// README sobre essa decisão (CPF sozinho não é secreto).
 model Employee {
-  id                 String   @id @default(cuid())
-  rhidPersonId       Int      @unique
-  cpf                String   @unique // apenas dígitos
-  nome               String
-  cargo              String?
-  unidade            String?
-  passwordHash       String?
-  mustChangePassword Boolean  @default(true)
-  ativo              Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id             String        @id @default(cuid())
+  rhidPersonId   Int           @unique
+  cpf            String        @unique // apenas dígitos
+  nome           String
+  cargo          String?
+  unidade        String? // nome do departamento, copiado do RHiD na sincronização (ver Departamento)
+  departamento   Departamento? @relation(fields: [departamentoId], references: [id])
+  departamentoId String?
+  ativo          Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  justificativas Justificativa[]
-  chamados       Chamado[]
+  justificativas    Justificativa[]
+  chamados          Chamado[]
+  assinaturasFolha  AssinaturaFolha[]
+  chamadoInteracoes ChamadoInteracao[]
+}
+
+// ---------- Estrutura organizacional (RHiD: Company / Department) ----------
+// Cadastro local das empresas/departamentos do RHiD, sincronizado junto com
+// os funcionários (ver syncEmpresasEDepartamentos em src/lib/rhid.ts). É a
+// fonte do campo Employee.unidade e dos filtros por unidade nas telas.
+
+model Empresa {
+  id            String   @id @default(cuid())
+  rhidCompanyId Int      @unique
+  nome          String
+  cnpj          String?
+  updatedAt     DateTime @updatedAt
+
+  departamentos Departamento[]
+}
+
+model Departamento {
+  id               String   @id @default(cuid())
+  rhidDepartmentId Int      @unique
+  nome             String
+  empresa          Empresa? @relation(fields: [empresaId], references: [id])
+  empresaId        String?
+  updatedAt        DateTime @updatedAt
+
+  funcionarios Employee[]
 }
 
 // ---------- Justificativas / ajustes de ponto ----------
@@ -84,6 +130,10 @@ model Justificativa {
   decididoPorId    String?
   decididoEm       DateTime?
   exportadoParaRhidEm DateTime? // marcado quando o RH confirma que já lançou manualmente no RHiD
+  // Quando o funcionário viu a lista pela última vez — usado só pro badge de
+  // "decisão nova" (ver GET /api/employee/pendencias). Não é "lida" no
+  // sentido de item específico, é a lista inteira.
+  visualizadoPeloFuncionarioEm DateTime?
 
   createdAt DateTime @default(now())
   anexos    Anexo[]
@@ -118,26 +168,103 @@ model Chamado {
   categoriaId   String
   descricao     String
   status        ChamadoStatus     @default(ABERTO)
+  // "Resumo": texto e autor da ÚLTIMA mensagem do RH na conversa (ver
+  // ChamadoInteracao abaixo, onde fica o histórico completo — inclusive as
+  // mensagens do funcionário). Existe só pra listar/filtrar sem precisar
+  // buscar a thread inteira; não é mais "a" resposta, é só a mais recente.
   resposta      String?
   respondidoPor AdminUser?        @relation("RespondidoPor", fields: [respondidoPorId], references: [id])
   respondidoPorId String?
   respondidoEm  DateTime?
+  // Quando o funcionário abriu a conversa (thread) pela última vez — usado
+  // só pro badge de "resposta nova" (ver GET /api/employee/pendencias).
+  // Atualizado em GET /api/chamados/[id] quando quem pede é o dono.
+  visualizadoPeloFuncionarioEm DateTime?
   createdAt     DateTime          @default(now())
 
-  anexos Anexo[]
+  anexos     Anexo[]
+  interacoes ChamadoInteracao[]
 
   @@index([status])
 }
 
+// Conversa completa de um chamado: mensagens (de qualquer lado) e mudanças
+// de status. Um chamado pode ter várias mensagens do RH e várias do
+// funcionário — não é mais um único campo de resposta. `autorTipo` diz quem
+// escreveu; só um de `autorAdmin`/`autorEmployee` fica preenchido.
+enum ChamadoInteracaoAutorTipo {
+  ADMIN
+  FUNCIONARIO
+}
+
+enum ChamadoInteracaoTipo {
+  NOTA
+  STATUS_ALTERADO
+  MENSAGEM
+}
+
+model ChamadoInteracao {
+  id              String                    @id @default(cuid())
+  chamado         Chamado                   @relation(fields: [chamadoId], references: [id])
+  chamadoId       String
+  autorTipo       ChamadoInteracaoAutorTipo
+  autorAdmin      AdminUser?                @relation(fields: [autorAdminId], references: [id])
+  autorAdminId    String?
+  autorEmployee   Employee?                 @relation(fields: [autorEmployeeId], references: [id])
+  autorEmployeeId String?
+  tipo            ChamadoInteracaoTipo
+  statusNovo      ChamadoStatus?
+  mensagem        String?
+  criadoEm        DateTime                  @default(now())
+
+  anexos Anexo[]
+
+  @@index([chamadoId])
+}
+
 model Anexo {
-  id              String         @id @default(cuid())
+  id              String            @id @default(cuid())
   nomeArquivo     String
-  url             String // caminho no storage configurado (local/S3/etc.)
-  justificativa   Justificativa? @relation(fields: [justificativaId], references: [id])
+  url             String // caminho no storage configurado (local/S3/etc.) — ver src/lib/storage.ts
+  mimeType        String?
+  tamanhoBytes    Int?
+  justificativa   Justificativa?    @relation(fields: [justificativaId], references: [id])
   justificativaId String?
-  chamado         Chamado?       @relation(fields: [chamadoId], references: [id])
+  chamado         Chamado?          @relation(fields: [chamadoId], references: [id])
   chamadoId       String?
-  criadoEm        DateTime       @default(now())
+  // Anexo de uma mensagem específica da conversa (ver ChamadoInteracao) —
+  // diferente de `chamadoId` acima, que é o anexo da abertura do chamado.
+  chamadoInteracao   ChamadoInteracao? @relation(fields: [chamadoInteracaoId], references: [id])
+  chamadoInteracaoId String?
+  criadoEm        DateTime          @default(now())
+}
+
+// ---------- Folha de ponto (assinatura do funcionário) ----------
+// A "folha" não é um dado novo — é a apuração que já vem do RHiD
+// (getApuracaoPonto) para um período. O que este app adiciona é o aceite do
+// funcionário sobre aquele período, e a configuração de onde cada período
+// começa/termina (ver src/lib/folha.ts).
+
+// Registro único (id fixo = 1). diaFechamento define o corte: ex. 20 → a
+// folha "de julho" cobre 21/06 a 20/07.
+model FolhaConfig {
+  id            Int      @id @default(1)
+  diaFechamento Int      @default(20) // 1–28 (evita cair em mês sem esse dia)
+  updatedAt     DateTime @updatedAt
+}
+
+// Um aceite por funcionário + período. O período é identificado pelo
+// ano/mês em que ele FECHA (não em que começa), pra bater com diaFechamento.
+model AssinaturaFolha {
+  id         String   @id @default(cuid())
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  employeeId String
+  ano        Int
+  mes        Int // 1–12
+  assinadoEm DateTime @default(now())
+
+  @@unique([employeeId, ano, mes])
+  @@index([ano, mes])
 }
 
 // ---------- Configurações ----------
@@ -154,6 +281,18 @@ model ZohoConfig {
   accessTokenExpiresAt DateTime?
   connectedEmail       String?
   updatedAt            DateTime  @updatedAt
+}
+
+// Registro único (id fixo = 1). Credencial do usuário de integração do RHiD,
+// configurável na aba RHiD de /admin/configuracoes em vez de só via .env.
+// Senha fica criptografada em repouso (ver src/lib/crypto.ts). Se vazio,
+// src/lib/rhid.ts cai para as variáveis de ambiente RHID_* (compatibilidade).
+model RhidConfig {
+  id                      Int      @id @default(1)
+  apiBaseUrl              String?
+  integrationEmail        String?
+  integrationPasswordEnc  String?
+  updatedAt               DateTime @updatedAt
 }
 
 // Cache do token de integração do RHiD (evita logar de novo a cada requisição)

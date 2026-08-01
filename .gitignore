@@ -2,5 +2,13 @@ node_modules/
 .next/
 .env
 .env.local
+.env.production
 *.log
 prisma/dev.db
+tsconfig.tsbuildinfo
+/uploads/
+
+# Playwright
+/test-results/
+/tests/ux-audit/report/
+/tests/ux-audit/.auth/

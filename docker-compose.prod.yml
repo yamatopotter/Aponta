@@ -1,0 +1,62 @@
+# Compose de produção — usa a imagem publicada em matheuspbarreto/aponta
+# (não builda local). Ver README.md, seção "Deploy em produção", pra lista
+# completa do que precisa ser preenchido em .env.production antes de subir.
+#
+# Uso (o --env-file é necessário porque o arquivo não se chama ".env" —
+# sem ele, o Compose não substitui ${POSTGRES_PASSWORD} no YAML abaixo):
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# Uma única imagem serve dois papéis (web e worker) — ver docker-entrypoint.sh
+# no repo. O banco não expõe porta pro host por padrão; só o app expõe 3000
+# (coloque um reverse proxy com TLS na frente, ver README).
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: aponta-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: evora_ponto
+    volumes:
+      - aponta_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U evora -d evora_ponto']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: matheuspbarreto/aponta:latest
+    container_name: aponta-app
+    command: ['web']
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://evora:${POSTGRES_PASSWORD}@db:5432/evora_ponto?schema=public
+    ports:
+      - '3000:3000'
+    volumes:
+      - aponta_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    image: matheuspbarreto/aponta:latest
+    container_name: aponta-worker
+    command: ['worker']
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://evora:${POSTGRES_PASSWORD}@db:5432/evora_ponto?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  aponta_pgdata:
+  aponta_uploads:

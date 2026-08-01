@@ -4,8 +4,10 @@ import { cookies } from 'next/headers';
 const COOKIE_NAME = 'evora_session';
 const SESSION_DURATION_SECONDS = 60 * 60 * 10; // 10h
 
+export type NivelAdmin = 'RH' | 'ADMIN';
+
 export type SessionPayload =
-  | { role: 'ADMIN'; adminId: string; username: string; name: string }
+  | { role: 'ADMIN'; adminId: string; username: string; name: string; nivel: NivelAdmin }
   | { role: 'EMPLOYEE'; employeeId: string; cpf: string; nome: string; unidade: string | null };
 
 function getSecretKey() {
@@ -49,6 +51,14 @@ export function destroySession() {
 export async function requireAdmin() {
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') return null;
+  return session;
+}
+
+// Nível ADMIN (não RH) — usado nas rotas de Configurações e de gestão de
+// administradores. Ver enum NivelAdmin no schema e a explicação no README.
+export async function requireNivelAdmin() {
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN' || session.nivel !== 'ADMIN') return null;
   return session;
 }
 

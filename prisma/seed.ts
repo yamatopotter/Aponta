@@ -6,17 +6,20 @@ const prisma = new PrismaClient();
 async function main() {
   // Admin padrão — login: admin / senha: admin
   // mustChangePassword=true força a troca no primeiro acesso (ver /login e middleware).
+  // nivel=ADMIN porque precisa ser alguém com acesso a Configurações pra
+  // conseguir criar os próximos administradores (ver /admin/administradores).
   const existingAdmin = await prisma.adminUser.findUnique({ where: { username: 'admin' } });
   if (!existingAdmin) {
     await prisma.adminUser.create({
       data: {
         username: 'admin',
         passwordHash: await bcrypt.hash('admin', 10),
-        name: 'Administrador RH',
+        name: 'Administrador',
+        nivel: 'ADMIN',
         mustChangePassword: true,
       },
     });
-    console.log('✔ Usuário admin/admin criado (troca de senha obrigatória no 1º login).');
+    console.log('✔ Usuário admin/admin criado, nível Admin (troca de senha obrigatória no 1º login).');
   } else {
     console.log('— Usuário admin já existia, nada a fazer.');
   }

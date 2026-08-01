@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { ArrowRight, CircleCheck, Info } from 'lucide-react';
 
-export default function ZohoConfigPage() {
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+export default function ZohoSection() {
   const search = useSearchParams();
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
@@ -59,19 +66,23 @@ export default function ZohoConfigPage() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="font-bold text-xl">Integração com o Zoho</h1>
-      <p className="text-[13.5px] text-inksoft mt-1 mb-6">
+      <p className="text-[13.5px] text-inksoft mb-5">
         Usado para enviar e-mails de notificação (ex.: aprovação/reprovação de justificativa,
         resposta de chamado) a partir da conta Zoho Mail da empresa.
       </p>
 
       {msg && (
-        <div className={`text-sm rounded-lg px-3 py-2.5 mb-5 ${conectado ? 'bg-primary-soft text-primary' : 'bg-info-soft text-info'}`}>
+        <div
+          className={`flex items-center gap-2 text-sm rounded-lg px-3 py-2.5 mb-5 ${
+            conectado ? 'bg-primary-soft text-primary' : 'bg-info-soft text-info'
+          }`}
+        >
+          {conectado ? <CircleCheck className="h-4 w-4 shrink-0" /> : <Info className="h-4 w-4 shrink-0" />}
           {msg}
         </div>
       )}
 
-      <div className="bg-white border border-line rounded-2xl p-6">
+      <Card className="p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
             <div className="font-bold text-sm">Status da conexão</div>
@@ -79,18 +90,15 @@ export default function ZohoConfigPage() {
               {conectado ? `Conectado${connectedEmail ? ` como ${connectedEmail}` : ''}` : 'Não conectado'}
             </div>
           </div>
-          <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full ${conectado ? 'bg-primary-soft text-primary' : 'bg-warn-soft text-warn'}`}>
-            {conectado ? 'Ativo' : 'Pendente'}
-          </span>
+          <Badge variant={conectado ? 'default' : 'warn'}>{conectado ? 'Ativo' : 'Pendente'}</Badge>
         </div>
 
         <form onSubmit={salvar} className="flex flex-col gap-4">
           <Field label="Client ID">
-            <input className="input" value={clientId} onChange={(e) => setClientId(e.target.value)} required />
+            <Input value={clientId} onChange={(e) => setClientId(e.target.value)} required />
           </Field>
           <Field label="Client Secret">
-            <input
-              className="input"
+            <Input
               type="password"
               placeholder={conectado ? '•••••••• (definido)' : ''}
               value={clientSecret}
@@ -99,29 +107,29 @@ export default function ZohoConfigPage() {
             />
           </Field>
           <Field label="Redirect URI">
-            <input className="input" value={redirectUri} onChange={(e) => setRedirectUri(e.target.value)} required />
+            <Input value={redirectUri} onChange={(e) => setRedirectUri(e.target.value)} required />
             <p className="text-[11px] text-inksoft mt-1">
               Cadastre exatamente esta URL como "Redirect URI" no app criado em{' '}
               <span className="font-semibold">api-console.zoho.com</span>.
             </p>
           </Field>
           <Field label="Escopos (scope)">
-            <input className="input" value={scope} onChange={(e) => setScope(e.target.value)} />
+            <Input value={scope} onChange={(e) => setScope(e.target.value)} />
           </Field>
 
           <div className="flex gap-3 mt-2">
-            <button disabled={saving} className="flex-1 border border-line rounded-lg py-3 text-sm font-bold disabled:opacity-60">
+            <Button type="submit" variant="outline" disabled={saving} className="flex-1 bg-white">
               {saving ? 'Salvando...' : 'Salvar configurações'}
-            </button>
-            <a
-              href="/api/integrations/zoho/authorize"
-              className="flex-1 text-center bg-primary text-white rounded-lg py-3 text-sm font-bold"
-            >
-              Conectar com Zoho
-            </a>
+            </Button>
+            <Button asChild className="flex-1">
+              <a href="/api/integrations/zoho/authorize">
+                Conectar com Zoho
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
 
       <div className="text-[12px] text-inksoft mt-4 leading-relaxed">
         Passo a passo: crie um app "Server-based Applications" em api-console.zoho.com, copie o
@@ -134,9 +142,9 @@ export default function ZohoConfigPage() {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-bold text-inksoft uppercase tracking-wide">{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
       {children}
-    </label>
+    </div>
   );
 }

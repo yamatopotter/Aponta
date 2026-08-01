@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { getSession } from '@/lib/auth';
+import { requireNivelAdmin } from '@/lib/auth';
 import { buildZohoAuthorizeUrl } from '@/lib/zoho';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session || session.role !== 'ADMIN') {
+  const session = await requireNivelAdmin();
+  if (!session) {
     return NextResponse.redirect(new URL('/login', process.env.ZOHO_REDIRECT_URI ?? 'http://localhost:3000'));
   }
 

@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+.env.local
+uploads
+tests
+test-results
+docs
+*.log
+npm-debug.log*
+.claude
+tsconfig.tsbuildinfo
+README.md

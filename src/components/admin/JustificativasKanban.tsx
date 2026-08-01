@@ -1,5 +1,7 @@
 'use client';
 
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import type { JustificativaAdmin } from './JustificativaDetailModal';
 
 const TIPO_LABEL = { FALTA: 'Falta', ATRASO: 'Atraso', SEM_SAIDA: 'Sem saída', AJUSTE: 'Ajuste' };
@@ -41,18 +43,23 @@ export default function JustificativasKanban({
                   className="text-left bg-white border border-line rounded-xl p-3 hover:shadow-sm"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-6 h-6 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                      {j.employee.nome.split(' ').slice(0, 2).map((n) => n[0]).join('')}
-                    </div>
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="text-[10px]">
+                        {j.employee.nome.split(' ').slice(0, 2).map((n) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="font-bold text-[13px] truncate">{j.employee.nome}</div>
-                    <span className="ml-auto text-[10px] font-bold text-inksoft bg-muted px-2 py-0.5 rounded-full shrink-0">
+                    <Badge variant="outline" className="ml-auto shrink-0 text-[10px] px-2 py-0.5">
                       {TIPO_LABEL[j.tipo]}
-                    </span>
+                    </Badge>
                   </div>
                   <div className="text-xs font-semibold">{j.motivo}</div>
                   <div className="text-[11px] text-inksoft mt-0.5">
                     {new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')} · {j.employee.unidade}
                   </div>
+                  {j.decididoPor && (
+                    <div className="text-[11px] text-inksoft mt-1">Por {j.decididoPor.name}</div>
+                  )}
                 </button>
               ))}
             </div>

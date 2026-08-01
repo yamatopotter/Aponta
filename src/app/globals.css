@@ -2,9 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body {
-  background: #F1F4F2;
-  color: #16241F;
+@layer base {
+  :root {
+    /* Paleta "Botânico Farmacêutico" em HSL, para os componentes shadcn/ui.
+       Ver docs/ARQUITETURA.md e tailwind.config.ts para o restante dos tokens. */
+    --background: 48 31% 94%;
+    --foreground: 111 11% 13%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 111 11% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 111 11% 13%;
+
+    --primary: 109 17% 37%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 331 39% 30%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 48 31% 94%;
+    --muted-foreground: 94 8% 36%;
+
+    --accent: 90 21% 89%;
+    --accent-foreground: 111 11% 13%;
+
+    --destructive: 9 56% 41%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 56 21% 86%;
+    --input: 56 21% 86%;
+    --ring: 109 17% 37%;
+
+    --radius: 0.625rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 @layer components {
