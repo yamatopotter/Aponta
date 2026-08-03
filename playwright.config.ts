@@ -16,13 +16,23 @@ export default defineConfig({
     { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'desktop-chromium',
+      testIgnore: /colaborador-demo\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
       dependencies: ['setup'],
     },
     {
       name: 'mobile-chromium',
+      testIgnore: /colaborador-demo\.spec\.ts/,
       use: { ...devices['Pixel 7'] },
       dependencies: ['setup'],
+    },
+    // Demo do colaborador loga por CPF (sem senha), então não precisa da
+    // sessão de admin que o projeto 'setup' prepara — roda isolado pra não
+    // ficar refém do login do RH.
+    {
+      name: 'mobile-chromium-colaborador',
+      testMatch: /colaborador-demo\.spec\.ts/,
+      use: { ...devices['Pixel 7'] },
     },
   ],
 });
