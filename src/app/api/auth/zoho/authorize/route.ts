@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { buildZohoLoginAuthorizeUrl } from '@/lib/zoho';
-import { isSecureRequest } from '@/lib/auth';
+import { getPublicOrigin, isSecureRequest } from '@/lib/auth';
 
 // Sem cookies()/headers() explícitos, o Next tenta pré-renderizar essa rota
 // como estática no build — e falha, porque ela consulta o banco. Precisa
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   const state = crypto.randomBytes(16).toString('hex');
-  const redirectUri = new URL('/api/auth/zoho/callback', req.url).toString();
+  const redirectUri = new URL('/api/auth/zoho/callback', getPublicOrigin(req)).toString();
   const authorizeUrl = buildZohoLoginAuthorizeUrl(config.clientId, redirectUri, state);
 
   const res = NextResponse.redirect(authorizeUrl);

@@ -15,6 +15,18 @@ export function isSecureRequest(req: NextRequest) {
   return req.headers.get('x-forwarded-proto') === 'https' || req.nextUrl.protocol === 'https:';
 }
 
+// Origem pública real da requisição — não dá pra confiar em req.url/req.nextUrl
+// sozinhos atrás de um reverse proxy: vários deles (ex. Apache sem
+// ProxyPreserveHost) trocam o header Host pelo endereço interno do container
+// (localhost:3000) antes de repassar pro Next.js. X-Forwarded-Host, por outro
+// lado, é enviado pela imensa maioria dos proxies mesmo nesse caso — usado
+// para montar o redirect_uri do OAuth do Zoho, que precisa bater com o
+// domínio real cadastrado no Zoho API Console.
+export function getPublicOrigin(req: NextRequest) {
+  const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? req.nextUrl.host;
+  return `${isSecureRequest(req) ? 'https' : 'http'}://${host}`;
+}
+
 export type NivelAdmin = 'RH' | 'ADMIN';
 
 export type SessionPayload =

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createSession } from '@/lib/auth';
+import { createSession, getPublicOrigin } from '@/lib/auth';
 import { exchangeZohoLoginCode } from '@/lib/zoho';
 
 // GET /api/auth/zoho/callback — volta do consentimento do Zoho. Se o e-mail
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const redirectUri = new URL('/api/auth/zoho/callback', req.url).toString();
+    const redirectUri = new URL('/api/auth/zoho/callback', getPublicOrigin(req)).toString();
     const identidade = await exchangeZohoLoginCode(code, redirectUri);
 
     const admin = await prisma.adminUser.findUnique({ where: { email: identidade.email } });
