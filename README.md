@@ -1,4 +1,4 @@
-# Evora Ponto (Aponta)
+# Aponta
 
 App interno da Evora Farma para funcionários justificarem faltas/atrasos, pedirem
 ajustes de ponto em qualquer data, abrirem chamados com o RH — e para o RH

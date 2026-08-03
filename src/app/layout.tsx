@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Evora Ponto',
+  title: 'Aponta',
   description: 'Justificativas de ponto e chamados com o RH — Evora Farma',
 };
 

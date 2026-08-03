@@ -1,4 +1,4 @@
-# Arquitetura — Evora Ponto
+# Arquitetura — Aponta
 
 Este documento complementa o [README.md](../README.md) (que cobre setup e
 configuração) com uma visão técnica mais profunda: arquitetura geral, modelo
@@ -6,7 +6,7 @@ de dados, fluxos e referência de API. Use-o como mapa para navegar o código.
 
 ## 1. Visão geral
 
-Evora Ponto é uma camada de **workflow e aprovação** sobre o sistema de ponto
+Aponta é uma camada de **workflow e aprovação** sobre o sistema de ponto
 real da empresa (RHiD/Control iD). Ele não mede nem calcula horas — isso
 continua sendo responsabilidade do RHiD. O que este app resolve:
 
@@ -25,7 +25,7 @@ flowchart LR
         ZOHO[(Zoho\nlogin OAuth)]
     end
 
-    subgraph EvoraPonto[Evora Ponto - Next.js]
+    subgraph Aponta[Aponta - Next.js]
         MW[middleware.ts\nauth por role]
         APP[App Router\npáginas + API routes]
         LIB[src/lib\nauth · rhid · zoho · crypto]
@@ -300,7 +300,7 @@ exceto onde marcado.
 ```mermaid
 sequenceDiagram
     participant F as Funcionário
-    participant APP as Evora Ponto
+    participant APP as Aponta
     participant DB as Postgres
     participant RH as RH (Admin)
 
@@ -318,7 +318,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant F as Funcionário
-    participant APP as Evora Ponto
+    participant APP as Aponta
     participant DB as Postgres (cache)
     participant RHID as RHiD
 
@@ -337,7 +337,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant F as Funcionário
-    participant APP as Evora Ponto
+    participant APP as Aponta
     participant RHID as RHiD
     participant DB as Postgres
 
@@ -358,7 +358,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant A as Admin (navegador)
-    participant APP as Evora Ponto
+    participant APP as Aponta
     participant ZOHO as Zoho
     participant DB as Postgres
 
