@@ -51,6 +51,27 @@ function formatHora(iso: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
+// O RHiD às vezes já devolve em listAfdtManutencao as marcações PREVISTAS do
+// dia (a partir do horário contratual), não só as batidas de verdade — dá
+// pra ver isso quando o dia é hoje e alguma marcação tem horário no futuro.
+// Soma só pares Entrada→Saída já fechados; se sobrar uma entrada em aberto,
+// conta até agora (jornada "em andamento").
+function calcularMinutosTrabalhados(marcacoes: Marcacao[], agora: Date): number {
+  let total = 0;
+  let entradaAberta: Date | null = null;
+  for (const m of [...marcacoes].sort((a, b) => a.dateTime.localeCompare(b.dateTime))) {
+    const t = new Date(m.dateTime);
+    if (m._typeEntradaSaida === 'E') {
+      entradaAberta = t;
+    } else if (m._typeEntradaSaida === 'S' && entradaAberta) {
+      total += (t.getTime() - entradaAberta.getTime()) / 60000;
+      entradaAberta = null;
+    }
+  }
+  if (entradaAberta) total += (agora.getTime() - entradaAberta.getTime()) / 60000;
+  return Math.round(total);
+}
+
 // "Segunda, 27/07" — nome do dia por extenso, mais fácil de ler que a abreviação "seg.".
 function formatDataLonga(iso: string) {
   const d = new Date(iso);
@@ -183,13 +204,22 @@ export default function FolhaAssinatura() {
       <div className={cn('flex flex-col gap-2 transition-opacity duration-200', loading && 'opacity-50')}>
         {apuracao.length === 0 && <div className="text-xs text-inksoft py-4 text-center">Sem apuração para este período.</div>}
         {apuracao.map((dia) => {
-          const marcacoes = (dia.listAfdtManutencao ?? []).map((m) => formatHora(m.dateTime)).join(' · ');
           const dataCurta = paraDataCurta(dia.date);
           const hoje = hojeCurto();
+          const éHoje = dataCurta === hoje;
+          const agora = new Date();
+          // Filtra marcações com horário no futuro — o RHiD chega a devolver aqui
+          // o horário contratual previsto do dia, não só o que já foi batido de
+          // verdade (ver calcularMinutosTrabalhados acima).
+          const marcacoesReais = éHoje
+            ? (dia.listAfdtManutencao ?? []).filter((m) => new Date(m.dateTime) <= agora)
+            : (dia.listAfdtManutencao ?? []);
+          const marcacoes = marcacoesReais.map((m) => formatHora(m.dateTime)).join(' · ');
+          const totalMinutos = éHoje ? calcularMinutosTrabalhados(marcacoesReais, agora) : dia.totalHorasTrabalhadas;
           // O RHiD marca dia futuro (e às vezes o de hoje, antes de acabar) como "falta"
           // por não ter marcação ainda — não é uma pendência de verdade, então não alertamos.
           const diaFuturo = dataCurta > hoje;
-          const diaEmAberto = diaFuturo || dataCurta === hoje;
+          const diaEmAberto = diaFuturo || éHoje;
           const alerta = !diaEmAberto && (dia.possuiPendencias || dia.faltaDiaInteiro);
           const situacao = dia.folga
             ? 'Folga'
@@ -198,8 +228,8 @@ export default function FolhaAssinatura() {
               : diaFuturo
                 ? 'Ainda não ocorreu'
                 : marcacoes
-                  ? marcacoes
-                  : dataCurta === hoje
+                  ? marcacoes + (éHoje ? ' · Em andamento' : '')
+                  : éHoje
                     ? 'Ainda não bateu ponto hoje'
                     : dia.faltaDiaInteiro
                       ? 'Falta'
@@ -212,7 +242,7 @@ export default function FolhaAssinatura() {
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-bold text-sm">{formatDataLonga(dia.date)}</span>
-                <span className="font-bold text-sm tabular-nums shrink-0">{formatMinutos(dia.totalHorasTrabalhadas)}</span>
+                <span className="font-bold text-sm tabular-nums shrink-0">{formatMinutos(totalMinutos)}</span>
               </div>
               <span className="text-xs text-inksoft tabular-nums">{situacao}</span>
               {horarioEsperado && (
