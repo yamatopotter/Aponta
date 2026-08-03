@@ -23,6 +23,33 @@ const ZOHO_ACCOUNTS_URL = 'https://accounts.zoho.com';
  * `exchangeZohoLoginCode` abaixo.
  */
 
+// Domínios oficiais de accounts-server do Zoho, por data center (ver docs do
+// Zoho OAuth). O callback devolve esse valor num query param NÃO autenticado
+// — sem validar contra essa lista, um atacante poderia forjar a URL e fazer
+// o servidor mandar o client_secret pra um domínio arbitrário dele (SSRF).
+const ZOHO_ACCOUNTS_SERVERS_CONHECIDOS = new Set([
+  'accounts.zoho.com',
+  'accounts.zoho.eu',
+  'accounts.zoho.in',
+  'accounts.zoho.com.au',
+  'accounts.zoho.jp',
+  'accounts.zoho.uk',
+  'accounts.zohocloud.ca',
+  'accounts.zoho.sa',
+]);
+
+export function sanitizeZohoAccountsServer(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return null;
+    if (!ZOHO_ACCOUNTS_SERVERS_CONHECIDOS.has(parsed.hostname)) return null;
+    return `https://${parsed.hostname}`;
+  } catch {
+    return null;
+  }
+}
+
 export function buildZohoLoginAuthorizeUrl(clientId: string, redirectUri: string, state: string) {
   const params = new URLSearchParams({
     scope: 'AaaServer.profile.Read',
@@ -40,13 +67,22 @@ export interface ZohoIdentidade {
   nome: string;
 }
 
-export async function exchangeZohoLoginCode(code: string, redirectUri: string): Promise<ZohoIdentidade> {
+export async function exchangeZohoLoginCode(
+  code: string,
+  redirectUri: string,
+  accountsServerUrl?: string | null
+): Promise<ZohoIdentidade> {
   const config = await prisma.zohoConfig.findUnique({ where: { id: 1 } });
   if (!config?.clientId || !config.clientSecretEnc) {
     throw new Error('Configuração do Zoho incompleta. Peça pra um Admin preencher em Configurações → Zoho.');
   }
 
-  const tokenRes = await fetch(`${ZOHO_ACCOUNTS_URL}/oauth/v2/token`, {
+  // O Zoho manda de volta, no callback, qual accounts-server (DC) atende essa
+  // conta (.com, .eu, .in, .com.au, .jp...) — usar sempre accounts.zoho.com
+  // pra trocar o code por token falha silenciosamente pra contas fora dos EUA.
+  const accountsUrl = accountsServerUrl || ZOHO_ACCOUNTS_URL;
+
+  const tokenRes = await fetch(`${accountsUrl}/oauth/v2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -61,7 +97,7 @@ export async function exchangeZohoLoginCode(code: string, redirectUri: string): 
   const tokenData = await tokenRes.json();
   if (!tokenData.access_token) throw new Error('Zoho não retornou access_token.');
 
-  const infoRes = await fetch(`${ZOHO_ACCOUNTS_URL}/oauth/v2/userinfo`, {
+  const infoRes = await fetch(`${accountsUrl}/oauth/v2/userinfo`, {
     headers: { Authorization: `Bearer ${tokenData.access_token}` },
   });
   if (!infoRes.ok) throw new Error(`Falha ao obter identidade do Zoho (${infoRes.status}): ${await infoRes.text()}`);
