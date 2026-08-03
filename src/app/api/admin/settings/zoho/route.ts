@@ -7,8 +7,6 @@ import { encryptSecret } from '@/lib/crypto';
 const schema = z.object({
   clientId: z.string().min(1),
   clientSecret: z.string().min(1),
-  redirectUri: z.string().url(),
-  scope: z.string().optional(),
 });
 
 export async function GET() {
@@ -18,11 +16,8 @@ export async function GET() {
   const config = await prisma.zohoConfig.findUnique({ where: { id: 1 } });
   return NextResponse.json({
     clientId: config?.clientId ?? '',
-    redirectUri: config?.redirectUri ?? '',
-    scope: config?.scope ?? '',
-    connectedEmail: config?.connectedEmail ?? null,
-    conectado: Boolean(config?.refreshTokenEnc),
-    // client secret e tokens nunca voltam para o front-end
+    configurado: Boolean(config?.clientId && config?.clientSecretEnc),
+    // client secret nunca volta para o front-end
   });
 }
 
@@ -38,15 +33,11 @@ export async function POST(req: NextRequest) {
     update: {
       clientId: parsed.data.clientId,
       clientSecretEnc: encryptSecret(parsed.data.clientSecret),
-      redirectUri: parsed.data.redirectUri,
-      scope: parsed.data.scope,
     },
     create: {
       id: 1,
       clientId: parsed.data.clientId,
       clientSecretEnc: encryptSecret(parsed.data.clientSecret),
-      redirectUri: parsed.data.redirectUri,
-      scope: parsed.data.scope,
     },
   });
 

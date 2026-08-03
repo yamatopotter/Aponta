@@ -197,19 +197,19 @@ container (ver `docker-entrypoint.sh`):
      isso depois de já ter configurado RHiD/Zoho pela tela quebra a
      configuração salva** (fica impossível descriptografar) — precisa
      reconfigurar as duas abas em `/admin/configuracoes`.
-   - `ZOHO_REDIRECT_URI` — precisa ser a URL pública real (`https://...`),
-     não `localhost`. Se for usar login via Zoho OAuth (além do envio de
-     e-mail), o app Zoho no console deles precisa ter **as duas URLs de
-     callback** cadastradas: `/api/integrations/zoho/callback` (envio de
-     e-mail) e `/api/auth/zoho/callback` (login) — ver seção do Zoho abaixo.
    - RHiD/Zoho (client ID/secret, credencial de integração) podem ficar em
-     branco aqui e ser configurados depois pela UI (`/admin/configuracoes`)
-     — mas a variável `ZOHO_REDIRECT_URI` só é lida do ambiente, não tem
-     como mudar pela tela.
-4. **Reverse proxy com TLS na frente** (nginx, Caddy, Traefik, etc.) — o
-   container só escuta HTTP puro na porta 3000. O app usa cookies de sessão
-   (`secure: true` em produção — ver `src/lib/auth.ts`), então **sem HTTPS o
-   login não funciona** (o navegador descarta o cookie).
+     branco aqui e ser configurados depois pela UI (`/admin/configuracoes`).
+     O login via Zoho OAuth não usa nenhuma variável de ambiente — o
+     redirect_uri é calculado a partir da própria requisição (respeitando
+     `X-Forwarded-Host`/`X-Forwarded-Proto` atrás de um reverse proxy); o app
+     Zoho no console deles precisa ter `{seu-domínio}/api/auth/zoho/callback`
+     cadastrado como Redirect URI — ver aba Zoho de `/admin/configuracoes`.
+4. **Reverse proxy na frente** (nginx, Caddy, Traefik, etc.) — o container só
+   escuta HTTP puro na porta 3000. TLS é fortemente recomendado antes de ir
+   pra produção de verdade (senha e sessão trafegam em texto claro sem ele),
+   mas não é estritamente exigido pelo app: o cookie de sessão só fica
+   `secure` quando a requisição realmente chega em HTTPS (via
+   `X-Forwarded-Proto`), então funciona em HTTP puro pra teste inicial.
 5. **Volume persistente para `uploads/`** — já vem configurado no
    `docker-compose.prod.yml` (`aponta_uploads`), mas se for rodar sem esse
    compose (ex.: outro orquestrador), não esquecer: sem isso, todo anexo de
@@ -227,17 +227,10 @@ container (ver `docker-entrypoint.sh`):
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 ```
 
-Isso já aplica as migrations automaticamente (parte do entrypoint do
-serviço `web`). Falta só criar o primeiro admin — mesmo comando de sempre,
-rodado uma vez dentro do container:
-
-```bash
-docker compose -f docker-compose.prod.yml --env-file .env.production run --rm app npx tsx prisma/seed.ts
-```
-
-Isso cria `admin`/`admin` (nível Admin, com troca de senha obrigatória no
-1º login) e as categorias de chamado padrão — é idempotente, seguro rodar
-de novo depois (não duplica nem sobrescreve o que já existe).
+Isso já aplica as migrations e roda o seed automaticamente (parte do
+entrypoint do serviço `web`, a cada start — é idempotente, não duplica nem
+sobrescreve o que já existe). Já sobe com `admin`/`admin` (nível Admin, com
+troca de senha obrigatória no 1º login) e as categorias de chamado padrão.
 
 ### Atualizando para uma versão nova
 
@@ -293,16 +286,16 @@ nenhuma conta cadastrada (ou a conta estiver desativada), o acesso é
 recusado** — a pessoa volta pro `/login` com um aviso, nenhuma sessão é
 criada.
 
-Reaproveita o mesmo app Zoho (Client ID/Secret) já configurado na aba Zoho —
-só que com um `redirect_uri` diferente. **No Zoho API Console, cadastre as
-DUAS URLs de redirect no mesmo app**:
+Usa o Client ID/Secret configurados na aba Zoho de **RH → Configurações**
+(esse é o único uso do Zoho no app hoje — não envia e-mail). **No Zoho API
+Console, cadastre a URL de redirect no app**:
 
 ```
-http://localhost:3000/api/integrations/zoho/callback   (envio de e-mail)
-http://localhost:3000/api/auth/zoho/callback            (login)
+http://localhost:3000/api/auth/zoho/callback
 ```
 
-(troque `localhost:3000` pelo domínio de produção quando for o caso).
+(troque `localhost:3000` pelo domínio/IP real de produção — a própria aba
+Zoho de Configurações mostra a URL exata a cadastrar).
 
 ⚠️ **Isso não foi testado contra uma conta Zoho de verdade** — diferente da
 integração com o RHiD (onde bati a implementação contra a doc oficial e uma
@@ -319,24 +312,20 @@ app só expõe as próprias justificativas/chamados de quem loga, nada de
 terceiros. Se o app passar a expor dados mais sensíveis, vale revisitar isso
 (voltar a exigir uma senha, ou adicionar um segundo fator por SMS/e-mail).
 
-## Configurando o Zoho (envio de e-mail)
+## Configurando o Zoho (login de admin)
 
 1. Crie um app em [api-console.zoho.com](https://api-console.zoho.com) do
    tipo **Server-based Applications**.
-2. Defina o Redirect URI como `http://localhost:3000/api/integrations/zoho/callback`
-   (ou o domínio de produção equivalente).
-3. No app, vá na aba **Zoho** de **RH → Configurações**, preencha Client
-   ID/Secret e salve.
-4. Clique em **Conectar com Zoho** — isso abre a tela de consentimento; ao
-   aceitar, o app volta com a conta conectada (tokens ficam criptografados no
-   banco, nunca em texto puro).
+2. Defina o Redirect URI exatamente como a aba **Zoho** de **RH →
+   Configurações** mostra (`{seu-domínio}/api/auth/zoho/callback`).
+3. Ainda nessa aba, preencha Client ID/Secret e salve.
+4. Cadastre o e-mail de cada admin que vai usar esse login em **RH →
+   Administradores** (modo "Zoho", sem senha) — o e-mail que o Zoho devolver
+   precisa bater com um `AdminUser.email` ativo.
 
-O envio de e-mail em si (`src/lib/zoho.ts` → `sendZohoEmail`) já está pronto
-para uso, mas ainda **não está disparado automaticamente** em nenhum evento —
-o próximo passo natural é chamá-lo dentro das rotas de aprovação/reprovação
-de justificativa e de mensagem de chamado (`src/app/api/justificativas/[id]/route.ts`
-e `src/app/api/chamados/[id]/mensagens/route.ts`), assim que a conta Zoho Mail e o
-`accountId` de envio forem confirmados.
+Notificação por e-mail (aprovação/reprovação de justificativa, resposta de
+chamado) ainda não existe — quando for implementada, a ideia é usar SMTP, não
+o Zoho (o Zoho aqui serve só pra login).
 
 ## Estrutura
 
@@ -344,7 +333,7 @@ e `src/app/api/chamados/[id]/mensagens/route.ts`), assim que a conta Zoho Mail e
 prisma/schema.prisma        modelo de dados (não é o schema do RHiD)
 src/lib/rhid.ts              cliente do RHiD (login de integração, person, apuração)
 src/lib/folha.ts             cálculo do período da folha a partir do dia de fechamento
-src/lib/zoho.ts              OAuth + envio de e-mail via Zoho Mail
+src/lib/zoho.ts              OAuth do Zoho pro login de admin (identidade, sem envio de e-mail)
 src/lib/auth.ts              sessão (cookie JWT) para os dois perfis
 src/lib/crypto.ts            criptografia dos segredos do RHiD/Zoho em repouso
 src/middleware.ts            protege /admin e /ponto|/chamados por perfil
@@ -366,7 +355,6 @@ src/components/admin/dashboard/  StatCard, BreakdownBarChart (recharts), Ranking
 worker/sync-worker.ts        processo separado, sincroniza com o RHiD em loop
 
 src/app/api/auth/zoho/           login via Zoho OAuth (authorize/callback)
-src/app/api/integrations/zoho/   OAuth do Zoho pra envio de e-mail (outro fluxo)
 src/app/api/admin/dashboard/     agregações (groupBy) que alimentam o Dashboard
 
 src/app/api/...              todas as rotas de API (auth, justificativas,
@@ -410,8 +398,9 @@ publica em `https://<usuário>.github.io/<repo>/` a cada push que tocar
   acima), o `PersonDTO` do RHiD não traz o cargo diretamente; teria que vir
   de `GET /personroles` e ser cruzado por pessoa. Não mexi nisso agora, só na
   unidade — que era o que foi pedido.
-- **Notificação por e-mail automática** ao aprovar/reprovar ou responder
-  (ver seção do Zoho acima).
+- **Notificação por e-mail automática** ao aprovar/reprovar ou responder —
+  ainda não existe; a ideia é implementar via SMTP (o Zoho no app hoje serve
+  só pro login de admin, ver seção acima).
 - **Login via Zoho OAuth não testado contra uma conta real** — ver aviso na
   seção "Login via Zoho OAuth" acima. Funcionalmente implementado e
   compilando, mas o formato exato da resposta de identidade do Zoho precisa

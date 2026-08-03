@@ -22,7 +22,7 @@ continua sendo responsabilidade do RHiD. O que este app resolve:
 flowchart LR
     subgraph Externo
         RHID[(RHiD / Control iD)]
-        ZOHO[(Zoho Mail)]
+        ZOHO[(Zoho\nlogin OAuth)]
     end
 
     subgraph EvoraPonto[Evora Ponto - Next.js]
@@ -36,7 +36,7 @@ flowchart LR
     RH((RH / Admin)) -->|usuário + senha| MW
     APP --> LIB
     LIB -->|GET /person, /apuracao_ponto| RHID
-    LIB -->|OAuth + envio de e-mail| ZOHO
+    LIB -->|OAuth (login de admin)| ZOHO
     LIB --> DB
 ```
 
@@ -291,9 +291,7 @@ exceto onde marcado.
 | `/api/admin/settings/rhid` | GET/POST | nível ADMIN | Lê/salva URL base, e-mail e senha do usuário de integração do RHiD |
 | `/api/admin/rhid/test` | POST | nível ADMIN | Força login novo no RHiD e confirma que a credencial funciona |
 | `/api/admin/rhid/sync` | POST | nível ADMIN | Dispara `syncTudoDoRhid()` sob demanda (empresas → departamentos → funcionários) |
-| `/api/integrations/zoho/authorize` | GET | nível ADMIN | Inicia o fluxo OAuth do Zoho |
-| `/api/integrations/zoho/callback` | GET | — (callback do Zoho) | Troca o `code` por tokens e salva criptografado |
-| `/api/admin/settings/zoho` | GET/POST | nível ADMIN | Lê/salva Client ID e Secret do Zoho |
+| `/api/admin/settings/zoho` | GET/POST | nível ADMIN | Lê/salva Client ID e Secret do Zoho (só usados pro login via OAuth, ver seção 2) |
 
 ## 5. Fluxos principais
 
@@ -609,9 +607,8 @@ comportamento do app:
 - **`/admin/configuracoes` é uma única rota com abas controladas por
   `?tab=rhid|folha|zoho`** (não três páginas) — cada aba é um componente em
   `src/components/admin/configuracoes/*Section.tsx`, importado pela página.
-  O callback do Zoho (`/api/integrations/zoho/callback`) redireciona pra cá
-  com `?tab=zoho` pra já abrir na aba certa. Ao adicionar uma nova
-  integração/config, seguir esse padrão em vez de criar uma rota nova.
+  Ao adicionar uma nova integração/config, seguir esse padrão em vez de criar
+  uma rota nova.
 - **Sincronização periódica é um processo separado (`worker/sync-worker.ts`),
   não um cron dentro do Next.js** — de propósito, por pedido explícito ("um
   worker só pra sincronização, não precisa ser nada complexo"). É um loop
@@ -623,10 +620,11 @@ comportamento do app:
   (`requireNivelAdmin()`), e `AdminShell` (esconde item de menu). As duas
   primeiras são a proteção real; a terceira é só não confundir quem é nível
   RH mostrando um link que vai dar 403/redirect.
-- **Login via Zoho reaproveita o `ZohoConfig` já usado pro envio de e-mail**
-  (mesmo Client ID/Secret), só com `redirect_uri` e `scope` diferentes — não
-  criei uma segunda tabela de config. Isso significa que o app Zoho no
-  console precisa ter as duas URLs de callback cadastradas (ver README).
+- **`ZohoConfig` só existe pro login via OAuth** (Client ID/Secret) — chegou
+  a ter campos para envio de e-mail via Zoho Mail (`sendZohoEmail`,
+  `redirectUri`, `scope`, tokens), mas isso nunca foi usado de verdade
+  (nenhum código chamava `sendZohoEmail`) e foi removido; se um dia for
+  necessário enviar e-mail, a ideia é usar SMTP em vez de retomar essa rota.
   **O formato do endpoint de identidade (`/oauth/v2/userinfo`) não foi
   confirmado contra uma conta Zoho real** (diferente do RHiD, onde bati
   contra o swagger oficial) — se `exchangeZohoLoginCode()` em
@@ -637,9 +635,9 @@ comportamento do app:
 
 Ver a seção "O que ainda falta" no [README.md](../README.md) — resumidamente:
 upload real de anexo, `cargo` do funcionário ainda não sincronizado, login
-via Zoho não testado contra conta real, disparo automático de e-mail via
-Zoho ao aprovar/reprovar/responder, exportação CSV para lançamento no RHiD,
-e refinamento visual final.
+via Zoho não testado contra conta real, disparo automático de e-mail (via
+SMTP, a definir) ao aprovar/reprovar/responder, exportação CSV para
+lançamento no RHiD, e refinamento visual final.
 
 Especificamente da folha de ponto: `/api/folha/minha` e
 `/api/admin/folha/assinaturas` já aceitam `?ano=&mes=` para consultar

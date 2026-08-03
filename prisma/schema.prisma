@@ -269,18 +269,14 @@ model AssinaturaFolha {
 
 // ---------- Configurações ----------
 
-// Registro único (id fixo = 1). Segredos ficam criptografados (ver src/lib/crypto.ts).
+// Registro único (id fixo = 1). Só existe pra viabilizar o login de admin via
+// Zoho OAuth (ver src/lib/zoho.ts) — não há envio de e-mail pelo Zoho hoje.
+// Segredo fica criptografado (ver src/lib/crypto.ts).
 model ZohoConfig {
-  id                   Int       @id @default(1)
-  clientId             String?
-  clientSecretEnc      String?
-  redirectUri          String?
-  scope                String?   @default("ZohoMail.messages.CREATE,ZohoMail.accounts.READ")
-  refreshTokenEnc      String?
-  accessTokenEnc       String?
-  accessTokenExpiresAt DateTime?
-  connectedEmail       String?
-  updatedAt            DateTime  @updatedAt
+  id              Int      @id @default(1)
+  clientId        String?
+  clientSecretEnc String?
+  updatedAt       DateTime @updatedAt
 }
 
 // Registro único (id fixo = 1). Credencial do usuário de integração do RHiD,

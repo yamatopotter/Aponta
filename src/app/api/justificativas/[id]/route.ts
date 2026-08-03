@@ -35,8 +35,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     include: { employee: true },
   });
 
-  // TODO opcional: notificar o funcionário por e-mail via src/lib/zoho.ts
-  // (sendZohoEmail) quando a decisão for tomada, se o Zoho estiver conectado.
+  // TODO opcional: notificar o funcionário por e-mail (via SMTP, a definir)
+  // quando a decisão for tomada.
 
   return NextResponse.json(justificativa);
 }
