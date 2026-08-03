@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modelo 2 · Minimal — Aponta · Canguru · TrackHub</title>
+<style>
+  :root{ --ease: cubic-bezier(.22,1,.36,1); }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{ height:100%; font-family:'Segoe UI', system-ui, -apple-system, sans-serif; overflow:hidden; background:#f7f5f0; }
+
+  .carousel{ position:relative; width:100vw; height:100vh; overflow:hidden; }
+  .track{ display:flex; height:100%; width:300%; transition:transform .85s var(--ease); }
+  .panel{ width:33.3333%; height:100%; display:flex; align-items:center; justify-content:center; position:relative; }
+
+  .center{ display:flex; flex-direction:column; align-items:center; text-align:center; max-width:720px; padding:40px; position:relative; z-index:5; }
+
+  .ring-wrap{ position:relative; width:170px; height:170px; margin-bottom:44px; display:flex; align-items:center; justify-content:center; }
+  .ring{ position:absolute; inset:0; border-radius:50%; border:1.5px dashed currentColor; opacity:.4; animation:spin 26s linear infinite; }
+  .ring.r2{ inset:-16px; border-style:solid; border-width:1px; opacity:.18; animation:spin 40s linear infinite reverse; }
+  .logo-plate{ width:128px;height:128px; border-radius:28px; display:flex;align-items:center;justify-content:center; background:#fff; box-shadow:0 12px 30px rgba(0,0,0,.08); opacity:0; transform:scale(.85); animation:pop .7s var(--ease) .1s forwards, floaty 5.5s ease-in-out 1s infinite; }
+  .logo-plate img, .logo-plate svg{ width:76px; height:76px; }
+
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @keyframes pop{ to{ opacity:1; transform:scale(1); } }
+  @keyframes floaty{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
+
+  .num{ font-size:.72rem; letter-spacing:.3em; font-weight:700; opacity:.5; margin-bottom:10px; opacity:0; animation:fadeUp .6s var(--ease) .15s forwards; }
+  h1{ font-size:clamp(2.4rem,6vw,4.4rem); font-weight:800; letter-spacing:-.02em; line-height:1.2; padding-bottom:.08em; margin-bottom:14px; opacity:0; animation:fadeUp .7s var(--ease) .25s forwards; }
+  .underline{ width:0; height:3px; border-radius:2px; margin:0 auto 22px; animation:grow .8s var(--ease) .5s forwards; }
+  .tagline{ font-size:clamp(1rem,2vw,1.25rem); font-weight:600; margin-bottom:18px; opacity:0; animation:fadeUp .6s var(--ease) .35s forwards; }
+  .desc{ font-size:.98rem; line-height:1.7; color:#5b5b52; max-width:580px; opacity:0; animation:fadeUp .6s var(--ease) .45s forwards; }
+
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes grow{ to{ width:64px; } }
+
+  .marquee-wrap{ margin-top:36px; width:min(560px,80vw); overflow:hidden; -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent); mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent); opacity:0; animation:fadeUp .6s var(--ease) .6s forwards; }
+  .marquee{ display:flex; gap:12px; width:max-content; animation:scroll 18s linear infinite; }
+  @keyframes scroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+  .tag{ padding:7px 15px; border-radius:999px; font-size:.78rem; font-weight:600; white-space:nowrap; border:1px solid currentColor; opacity:.75; }
+
+  /* dots + arrows */
+  .dots{ position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:50; display:flex; gap:10px; }
+  .dotb{ width:9px;height:9px; border-radius:50%; background:rgba(0,0,0,.18); border:none; cursor:pointer; transition:all .3s var(--ease); }
+  .dotb.active{ width:26px; border-radius:5px; }
+  .arrow{ position:fixed; top:50%; transform:translateY(-50%); z-index:50; width:46px;height:46px; border-radius:50%; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.7); backdrop-filter:blur(6px); display:flex;align-items:center;justify-content:center; cursor:pointer; transition:transform .25s var(--ease), background .25s; }
+  .arrow:hover{ transform:translateY(-50%) scale(1.08); }
+  .arrow.left{ left:28px; } .arrow.right{ right:28px; }
+  .model-tag{ position:fixed; top:24px; left:32px; z-index:50; font-size:.72rem; letter-spacing:.24em; text-transform:uppercase; color:rgba(0,0,0,.4); }
+  .counter{ position:fixed; top:24px; right:32px; z-index:50; font-size:.78rem; font-weight:700; letter-spacing:.05em; color:rgba(0,0,0,.55); }
+
+  /* subtle floating dot field per panel */
+  .dotfield{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+  .df{ position:absolute; border-radius:50%; opacity:0; animation:drift-y linear infinite; }
+  @keyframes drift-y{ 0%{ transform:translateY(0); opacity:0; } 10%{opacity:.5;} 90%{opacity:.3;} 100%{ transform:translateY(-90vh); opacity:0; } }
+
+  /* PANEL 1 — APONTA */
+  #p1{ background:#f1ede2; color:#2c3a28; }
+  #p1 .ring{ color:#55704F; }
+  #p1 .underline{ background:#a3402e; }
+  #p1 .tagline{ color:#55704F; }
+  #p1 .tag{ color:#55704F; background:rgba(85,112,79,.08); }
+  #p1 .df{ background:#55704F; }
+
+  /* PANEL 2 — CANGURU */
+  #p2{ background:#fbf0e2; color:#4a3320; }
+  #p2 .ring{ color:#e2703a; }
+  #p2 .underline{ background:#e2703a; }
+  #p2 .tagline{ color:#c1440e; }
+  #p2 .tag{ color:#c1440e; background:rgba(226,112,58,.1); }
+  #p2 .df{ background:#e2703a; }
+
+  /* PANEL 3 — TRACKHUB */
+  #p3{ background:#eaf1f6; color:#0f2137; }
+  #p3 .ring{ color:#1b4b7a; }
+  #p3 .underline{ background:#1b4b7a; }
+  #p3 .tagline{ color:#0e6ba8; }
+  #p3 .tag{ color:#0e6ba8; background:rgba(14,107,168,.08); }
+  #p3 .df{ background:#1b4b7a; }
+</style>
+</head>
+<body>
+
+<div class="model-tag">Modelo 2 · Minimal</div>
+<div class="counter" id="counter">01 / 03</div>
+
+<button class="arrow left" id="prevBtn" aria-label="Anterior">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+<button class="arrow right" id="nextBtn" aria-label="Próximo">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 18l6-6-6-6"/></svg>
+</button>
+
+<div class="dots" id="dots">
+  <button class="dotb active" data-i="0"></button>
+  <button class="dotb" data-i="1"></button>
+  <button class="dotb" data-i="2"></button>
+</div>
+
+<div class="carousel">
+  <div class="track" id="track">
+
+    <!-- PANEL 1 — APONTA -->
+    <div class="panel" id="p1">
+      <div class="dotfield" data-count="10"></div>
+      <div class="center">
+        <div class="ring-wrap">
+          <div class="ring"></div>
+          <div class="ring r2"></div>
+          <div class="logo-plate">
+            <svg viewBox="0 0 100 100">
+              <rect width="100" height="100" rx="22" fill="#55704F"/>
+              <polyline points="27,54 43,70 75,32" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="num">SISTEMA 01 · EVORA FARMA</div>
+        <h1>Aponta</h1>
+        <div class="underline"></div>
+        <div class="tagline">Ponto, justificativas e chamados com o RH</div>
+        <p class="desc">
+          Funcionários justificam faltas e atrasos, pedem ajustes de ponto e abrem chamados com o RH.
+          O RH revisa, aprova ou reprova tudo num painel (tabela ou kanban), com um dashboard de
+          indicadores como porta de entrada.
+        </p>
+        <div class="marquee-wrap">
+          <div class="marquee">
+            <span class="tag">Justificativas de ponto</span>
+            <span class="tag">Chamados com o RH</span>
+            <span class="tag">Painel Kanban</span>
+            <span class="tag">Integração RHiD</span>
+            <span class="tag">Dashboard de indicadores</span>
+            <span class="tag">Justificativas de ponto</span>
+            <span class="tag">Chamados com o RH</span>
+            <span class="tag">Painel Kanban</span>
+            <span class="tag">Integração RHiD</span>
+            <span class="tag">Dashboard de indicadores</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 2 — CANGURU -->
+    <div class="panel" id="p2">
+      <div class="dotfield" data-count="10"></div>
+      <div class="center">
+        <div class="ring-wrap">
+          <div class="ring"></div>
+          <div class="ring r2"></div>
+          <div class="logo-plate" style="width:140px;height:140px;">
+            <svg viewBox="0 0 512 512" style="width:96px;height:96px;">
+<g>
+<path d="M 430.41 313.32 C429.37,324.83 428.00,323.86 428.55,312.00 C429.19,298.14 429.77,294.00 431.07,294.00 C432.00,294.00 431.91,296.74 430.41,313.32 ZM 446.56 134.45 C445.76,142.03 444.83,148.51 444.49,148.85 C443.52,149.81 445.13,121.62 446.11,120.57 C447.89,118.63 447.97,121.06 446.56,134.45 ZM 334.70 324.30 C333.91,329.67 332.98,334.36 332.62,334.71 C332.27,335.06 332.18,331.18 332.42,326.08 C332.86,316.91 334.36,312.97 337.40,313.02 C338.13,313.03 338.10,313.29 337.32,313.78 C336.68,314.19 335.50,318.93 334.70,324.30 ZM 441.41 189.75 C441.13,191.54 440.43,193.00 439.85,193.00 C439.17,193.00 439.01,191.61 439.39,189.25 C439.72,187.19 440.28,182.24 440.63,178.25 C440.98,174.26 441.67,171.00 442.17,171.00 C443.02,171.00 442.57,182.14 441.41,189.75 ZM 310.25 494.47 C309.98,495.86 309.66,497.00 309.52,497.00 C309.29,497.00 307.10,492.26 301.53,479.66 C298.15,472.03 299.27,472.45 303.08,480.25 C307.64,489.55 309.66,493.00 310.23,492.44 C310.51,492.16 310.52,493.07 310.25,494.47 ZM 11.00 498.08 C11.00,499.23 5.96,499.26 4.17,498.13 C3.25,497.54 5.69,495.82 12.17,492.47 C17.30,489.83 20.88,488.41 20.13,489.33 C19.37,490.25 18.35,491.00 17.86,491.00 C16.07,491.00 8.54,496.35 9.75,496.75 C10.44,496.98 11.00,497.58 11.00,498.08 ZM 317.67 447.98 C317.56,452.61 317.07,455.13 316.21,455.46 C314.23,456.24 313.61,453.26 314.86,449.06 C315.49,446.97 316.00,444.31 316.00,443.13 C316.00,441.96 316.41,441.00 316.92,441.00 C317.42,441.00 317.76,444.14 317.67,447.98 ZM 427.67 341.17 C426.99,346.87 425.85,348.78 424.32,346.79 C423.65,345.92 423.78,343.95 424.72,340.75 C426.63,334.25 428.45,334.51 427.67,341.17 ZM 223.58 215.30 C221.58,218.44 219.69,221.00 219.40,221.00 C219.10,221.00 221.23,216.52 224.13,211.04 C227.03,205.56 229.54,201.21 229.71,201.38 C230.44,202.11 226.94,210.05 223.58,215.30 ZM 96.80 451.89 C92.24,453.79 88.98,454.63 90.08,453.62 C90.31,453.41 93.30,451.83 96.72,450.12 C100.62,448.17 102.74,447.52 102.40,448.40 C102.11,449.16 99.59,450.74 96.80,451.89 ZM 319.48 432.13 C318.19,439.77 317.05,441.05 317.28,434.58 C317.43,430.63 317.95,428.51 318.86,428.21 C319.93,427.85 320.06,428.67 319.48,432.13 ZM 332.00 346.50 C332.00,348.13 331.44,349.00 330.39,349.00 C329.34,349.00 328.99,348.46 329.39,347.42 C329.73,346.55 330.00,345.42 330.00,344.92 C330.00,344.41 330.45,344.00 331.00,344.00 C331.55,344.00 332.00,345.12 332.00,346.50 Z" fill="rgb(238,137,60)"/>
+<path d="M 463.65 61.25 L 450.59 75.00 L 410.84 75.00 L 415.46 69.25 C418.01,66.09 424.14,58.33 429.08,52.00 C434.02,45.67 443.05,34.28 449.14,26.67 L 460.21 12.84 L 464.35 13.37 C466.63,13.66 476.94,13.92 487.25,13.95 C497.56,13.98 506.00,14.34 505.99,14.75 C505.98,15.63 482.38,41.55 463.65,61.25 ZM 310.25 494.47 C310.32,494.11 310.37,493.79 310.40,493.51 C310.55,493.34 310.68,492.85 310.74,492.21 C310.82,491.27 312.02,482.93 313.40,473.67 C315.21,461.55 315.60,457.04 314.94,455.34 C315.26,455.61 315.69,455.67 316.21,455.46 C317.07,455.13 317.56,452.61 317.67,447.98 C317.76,444.19 317.43,441.07 316.94,441.00 C316.95,441.00 316.96,441.00 316.97,441.00 C317.52,441.00 317.84,443.86 317.72,447.62 L 317.50 454.25 L 334.00 465.06 C343.08,471.00 352.20,476.91 354.29,478.18 C369.52,487.51 382.95,496.65 382.67,497.49 C382.45,498.14 369.55,498.59 346.80,498.76 C318.11,498.97 311.05,498.77 310.16,497.69 C310.04,497.54 309.86,497.26 309.63,496.86 C309.79,496.51 310.04,495.57 310.25,494.47 ZM 427.29 336.05 C426.70,335.79 425.72,337.33 424.72,340.75 C424.04,343.08 423.79,344.75 423.95,345.83 C419.45,343.01 408.95,335.68 397.00,326.95 C381.33,315.49 367.49,305.40 366.25,304.52 C365.01,303.63 364.00,302.56 364.00,302.13 C364.00,301.42 394.16,286.40 400.12,284.14 C403.19,282.98 403.79,283.91 407.55,295.50 C409.71,302.17 422.32,337.84 423.63,341.00 C424.06,342.03 424.54,341.48 425.16,339.25 C425.93,336.47 426.77,335.50 427.29,336.05 ZM 299.82 474.35 C299.13,473.55 299.59,475.28 301.53,479.66 C302.93,482.83 304.12,485.50 305.11,487.73 C303.50,484.26 301.80,480.45 300.46,477.25 C299.22,474.29 299.14,473.47 299.82,474.35 ZM 316.00 443.13 C316.00,444.31 315.49,446.97 314.86,449.06 C314.27,451.04 314.10,452.75 314.29,453.92 C313.98,452.80 314.15,451.44 314.82,449.22 C315.47,447.05 316.00,444.31 316.00,443.13 ZM 426.19 347.06 C426.52,346.61 426.81,345.83 427.07,344.74 C426.80,345.96 426.51,346.84 426.28,347.06 C426.26,347.07 426.23,347.07 426.19,347.06 ZM 307.21 488.38 C306.16,486.44 304.80,483.76 303.08,480.25 C304.53,483.20 305.99,486.06 307.21,488.38 Z" fill="rgb(250,89,35)"/>
+<path d="M 299.82 474.35 C299.21,473.56 299.21,474.14 300.11,476.38 C292.78,459.80 291.41,456.82 285.89,445.29 C283.20,439.67 281.00,434.83 281.00,434.54 C281.00,434.00 276.45,423.75 272.98,416.50 C271.26,412.90 268.96,407.85 262.08,392.64 C260.88,389.97 259.11,387.58 258.15,387.33 C257.20,387.08 256.35,385.89 256.26,384.69 C256.18,383.48 254.89,379.80 253.41,376.50 C251.93,373.20 250.36,369.60 249.91,368.50 C248.15,364.21 245.90,359.39 244.53,357.00 C242.09,352.73 237.19,341.73 235.51,336.72 C234.62,334.09 232.79,330.30 231.43,328.30 C230.06,326.29 228.68,323.58 228.35,322.28 C228.03,320.97 225.40,315.09 222.51,309.20 C219.63,303.32 215.00,293.33 212.22,287.00 C203.50,267.13 201.10,262.20 199.92,261.81 C198.80,261.43 218.42,220.93 228.34,203.13 C230.90,198.52 233.00,194.41 233.00,193.99 C233.00,193.56 233.71,192.94 234.58,192.61 C236.86,191.73 237.72,191.89 236.14,192.89 C234.63,193.85 235.28,194.41 245.50,200.87 C272.90,218.20 273.73,218.73 284.84,226.25 C287.89,228.31 290.80,230.00 291.30,230.00 C291.80,230.00 293.46,231.01 294.98,232.25 C296.50,233.49 299.25,235.40 301.09,236.50 C302.93,237.60 305.39,239.18 306.57,240.00 C310.48,242.75 313.46,244.68 318.00,247.43 C322.26,250.01 329.87,254.93 338.25,260.52 C340.31,261.90 342.00,263.20 342.00,263.41 C342.00,266.68 338.60,294.65 337.45,300.86 C336.02,308.53 336.03,309.37 337.52,311.02 C338.95,312.60 338.96,312.92 337.66,313.66 C336.61,314.25 335.55,318.84 334.12,329.00 C333.23,335.31 332.47,340.62 331.83,345.12 C331.65,344.45 331.35,344.00 331.00,344.00 C330.45,344.00 330.00,344.41 330.00,344.92 C330.00,345.42 329.73,346.55 329.39,347.42 C328.99,348.46 329.34,349.00 330.39,349.00 C330.77,349.00 331.08,348.89 331.33,348.67 C329.26,363.12 328.52,367.93 327.86,371.50 C327.35,374.25 326.50,380.32 325.96,385.00 C325.42,389.67 324.74,394.25 324.45,395.17 C324.07,396.35 321.97,411.39 319.74,428.52 C319.61,428.12 319.32,428.06 318.86,428.21 C317.95,428.51 317.43,430.63 317.28,434.58 C317.09,439.97 317.85,439.98 318.85,435.42 C318.52,438.03 318.19,440.65 317.87,443.24 C317.81,443.67 317.76,444.10 317.71,444.52 C317.63,442.40 317.35,441.00 316.97,441.00 C316.96,441.00 316.95,441.00 316.94,441.00 C316.93,441.00 316.92,441.00 316.92,441.00 C316.41,441.00 316.00,441.96 316.00,443.13 C316.00,444.31 315.47,447.05 314.82,449.22 C314.15,451.44 313.98,452.80 314.29,453.92 C314.39,454.58 314.61,455.06 314.94,455.34 C315.60,457.04 315.21,461.55 313.40,473.67 C312.02,482.93 310.82,491.27 310.74,492.21 C310.68,492.85 310.55,493.34 310.40,493.51 C310.50,492.69 310.44,492.23 310.23,492.44 C309.88,492.79 308.96,491.58 307.21,488.38 L 307.21 488.38 C307.21,488.37 307.20,488.35 307.20,488.34 C305.97,486.03 304.52,483.18 303.08,480.25 C301.46,476.93 300.32,474.95 299.82,474.35 ZM 463.65 61.25 C470.91,53.62 478.90,45.05 485.96,37.36 C480.17,43.78 476.00,48.59 476.00,48.89 C476.00,49.28 476.56,50.19 477.25,50.91 C478.27,51.98 478.13,52.12 476.50,51.65 C475.00,51.23 473.42,52.27 470.21,55.79 C467.85,58.38 463.43,63.20 460.37,66.50 C453.11,74.36 450.85,79.51 450.53,89.00 C450.39,93.12 450.18,96.50 450.06,96.50 C449.61,96.50 449.25,99.87 448.57,110.50 C448.38,113.48 447.99,118.23 447.51,123.49 C447.66,119.84 447.20,119.38 446.11,120.57 C445.13,121.62 443.52,149.81 444.49,148.85 C444.71,148.63 445.17,145.86 445.69,141.90 C444.64,151.85 443.47,164.54 443.00,171.00 C442.89,172.52 442.75,174.32 442.59,176.28 C442.67,173.18 442.55,171.00 442.17,171.00 C441.67,171.00 440.98,174.26 440.63,178.25 C440.28,182.24 439.72,187.19 439.39,189.25 C439.01,191.61 439.17,193.00 439.85,193.00 C440.40,193.00 441.06,191.68 441.36,190.01 C441.07,193.04 440.79,195.97 440.52,198.50 C439.66,206.75 438.52,217.55 438.01,222.50 C437.49,227.45 436.80,235.32 436.47,240.00 C436.15,244.68 435.26,254.35 434.50,261.50 C433.75,268.65 432.62,282.60 432.01,292.50 C431.89,294.58 431.74,296.71 431.59,298.80 C431.80,294.90 431.61,294.00 431.07,294.00 C429.77,294.00 429.19,298.14 428.55,312.00 C428.17,320.26 428.72,323.24 429.44,320.39 C428.96,324.38 428.42,329.93 428.08,334.60 C428.00,335.62 427.91,336.62 427.83,337.59 C427.76,336.69 427.57,336.18 427.29,336.05 C426.77,335.50 425.93,336.47 425.16,339.25 C424.54,341.48 424.06,342.03 423.63,341.00 C422.32,337.84 409.71,302.17 407.55,295.50 C403.79,283.91 403.19,282.98 400.12,284.14 C394.16,286.40 364.00,301.42 364.00,302.13 C364.00,302.22 364.04,302.34 364.13,302.48 C362.62,301.09 362.91,300.82 364.50,299.63 C365.60,298.80 371.67,295.60 378.00,292.52 C384.33,289.44 390.62,286.27 392.00,285.48 C393.38,284.69 395.72,283.55 397.21,282.94 C398.70,282.33 400.19,280.97 400.53,279.92 C401.14,277.98 396.47,262.80 388.38,240.40 C385.97,233.74 384.00,227.65 384.00,226.85 C384.00,226.05 383.58,224.97 383.06,224.45 C382.54,223.93 380.54,218.68 378.61,212.78 C376.68,206.89 374.57,201.06 373.91,199.83 C373.25,198.60 372.13,195.55 371.42,193.05 C370.71,190.55 368.28,183.32 366.03,177.00 C363.77,170.68 361.06,162.64 360.01,159.15 C358.95,155.66 357.68,152.29 357.18,151.65 C356.68,151.02 355.98,149.26 355.62,147.75 C355.23,146.11 354.26,144.97 353.23,144.92 C352.06,144.87 351.93,144.67 352.83,144.31 C353.88,143.89 369.24,125.95 385.21,106.50 C386.12,105.40 390.60,100.07 395.18,94.65 C399.75,89.23 404.17,83.81 405.00,82.61 C405.45,81.94 407.71,79.03 410.89,75.00 L 450.59 75.00 ZM 11.00 498.08 C11.00,497.58 10.44,496.98 9.75,496.75 C8.54,496.35 16.07,491.00 17.86,491.00 C18.35,491.00 19.37,490.25 20.13,489.33 C20.42,488.98 20.07,488.97 19.25,489.24 C26.82,485.62 33.72,482.27 35.00,481.58 C36.38,480.85 56.40,470.68 79.50,459.00 C83.13,457.17 86.67,455.37 90.06,453.64 C89.03,454.61 92.27,453.78 96.80,451.89 C99.59,450.74 102.11,449.16 102.40,448.40 C102.65,447.76 101.58,447.93 99.46,448.83 C112.94,441.92 122.50,436.88 123.12,436.34 C124.57,435.08 124.80,435.37 125.41,439.17 C125.78,441.50 126.93,444.78 127.96,446.45 C130.12,449.97 136.03,461.72 145.45,481.18 C150.68,492.01 152.53,494.94 154.28,495.21 C156.49,495.54 156.48,495.55 154.00,497.02 C151.86,498.29 140.90,498.52 78.42,498.66 C48.82,498.73 22.85,498.58 10.92,498.32 C10.97,498.25 11.00,498.17 11.00,498.08 ZM 334.70 324.30 C335.50,318.93 336.68,314.19 337.32,313.78 C338.10,313.29 338.13,313.03 337.40,313.02 C334.36,312.97 332.86,316.91 332.42,326.08 C332.18,331.18 332.27,335.06 332.62,334.71 C332.98,334.36 333.91,329.67 334.70,324.30 ZM 223.58 215.30 C226.94,210.05 230.44,202.11 229.71,201.38 C229.54,201.21 227.03,205.56 224.13,211.04 C221.23,216.52 219.10,221.00 219.40,221.00 C219.69,221.00 221.58,218.44 223.58,215.30 ZM 310.25 497.78 C311.43,498.75 318.47,498.96 344.35,498.78 L 311.06 499.03 ZM 356.72 479.68 C355.91,479.18 355.10,478.68 354.29,478.18 C352.20,476.91 343.08,471.00 334.00,465.06 L 317.50 454.25 L 317.52 453.57 C319.61,455.62 334.17,465.36 354.08,478.00 C354.98,478.58 355.86,479.13 356.72,479.68 ZM 370.26 307.43 C375.69,311.39 385.88,318.82 397.00,326.95 C397.67,327.43 398.34,327.92 399.00,328.40 C388.28,320.77 376.96,312.55 370.26,307.43 ZM 436.56 42.49 L 436.57 42.48 C438.18,40.27 444.16,32.70 449.86,25.65 L 460.05 13.04 L 449.14 26.67 C445.49,31.22 440.80,37.13 436.56,42.49 ZM 382.67 497.49 C382.81,497.07 379.54,494.59 374.34,491.05 C380.73,495.30 382.84,496.99 382.67,497.49 ZM 414.03 71.04 C415.91,68.67 417.96,66.09 420.07,63.46 C420.22,63.27 420.37,63.08 420.52,62.90 C418.41,65.56 416.59,67.85 415.46,69.25 ZM 4.04 498.01 C4.02,498.01 4.00,498.00 3.99,497.99 C3.67,497.79 3.96,497.37 4.89,496.71 C4.12,497.32 3.85,497.75 4.04,498.01 ZM 426.34 346.98 C426.40,346.90 426.47,346.77 426.54,346.61 C426.47,346.80 426.41,346.93 426.36,346.98 C426.35,346.98 426.35,346.98 426.34,346.98 Z" fill="rgb(253,130,34)"/>
+<path d="M 208.94 241.19 C203.45,252.58 199.39,261.63 199.92,261.81 C201.10,262.20 203.50,267.13 212.22,287.00 C215.00,293.33 219.63,303.32 222.51,309.20 C225.40,315.09 228.03,320.97 228.35,322.28 C228.68,323.58 230.06,326.29 231.43,328.30 C232.79,330.30 234.62,334.09 235.51,336.72 C237.19,341.73 242.09,352.73 244.53,357.00 C245.90,359.39 248.15,364.21 249.91,368.50 C250.36,369.60 251.93,373.20 253.41,376.50 C254.89,379.80 256.18,383.48 256.26,384.69 C256.35,385.89 257.20,387.08 258.15,387.33 L 258.16 387.33 C256.18,388.23 244.66,400.14 213.50,433.43 C206.90,440.49 199.02,448.98 196.00,452.31 C192.98,455.64 186.22,462.90 180.99,468.43 C175.75,473.97 167.56,482.71 162.77,487.85 C159.43,491.43 157.08,493.79 155.19,495.35 C154.95,495.31 154.65,495.26 154.28,495.21 C152.53,494.94 150.68,492.01 145.45,481.18 C136.03,461.72 130.12,449.97 127.96,446.45 C126.93,444.78 125.78,441.50 125.41,439.17 C124.80,435.37 124.57,435.08 123.12,436.34 C123.06,436.39 122.93,436.48 122.73,436.60 C124.23,434.52 151.61,371.77 163.14,344.00 C165.30,338.77 167.50,333.60 168.02,332.50 C168.54,331.40 171.49,324.65 174.56,317.50 C177.64,310.35 184.23,295.05 189.20,283.50 C193.70,273.06 201.32,256.82 208.94,241.19 ZM 360.78 135.62 C356.26,140.84 353.27,144.13 352.83,144.31 C351.93,144.67 352.06,144.87 353.23,144.92 C354.26,144.97 355.23,146.11 355.62,147.75 C355.98,149.26 356.68,151.02 357.18,151.65 C357.68,152.29 358.95,155.66 360.01,159.15 C361.06,162.64 363.77,170.68 366.03,177.00 C368.28,183.32 370.71,190.55 371.42,193.05 C372.13,195.55 373.25,198.60 373.91,199.83 C374.57,201.06 376.68,206.89 378.61,212.78 C380.54,218.68 382.54,223.93 383.06,224.45 C383.58,224.97 384.00,226.05 384.00,226.85 C384.00,227.65 385.97,233.74 388.38,240.40 C396.47,262.80 401.14,277.98 400.53,279.92 C400.19,280.97 398.70,282.33 397.21,282.94 C395.72,283.55 393.38,284.69 392.00,285.48 C390.62,286.27 384.33,289.44 378.00,292.52 C371.67,295.60 365.60,298.80 364.50,299.63 C362.91,300.82 362.62,301.09 364.13,302.48 C364.24,302.67 364.42,302.90 364.65,303.14 L 362.91 301.77 L 356.70 304.44 C352.48,306.25 342.28,311.22 337.51,313.77 C337.56,313.72 337.61,313.69 337.66,313.66 C338.96,312.92 338.95,312.60 337.52,311.02 C336.03,309.37 336.02,308.53 337.45,300.86 C338.60,294.65 342.00,266.68 342.00,263.41 C342.00,263.20 340.31,261.90 338.25,260.52 C329.87,254.93 322.26,250.01 318.00,247.43 C313.46,244.68 310.48,242.75 306.57,240.00 C305.39,239.18 302.93,237.60 301.09,236.50 C299.25,235.40 296.50,233.49 294.98,232.25 C293.46,231.01 291.80,230.00 291.30,230.00 C290.80,230.00 287.89,228.31 284.84,226.25 C273.73,218.73 272.90,218.20 245.50,200.87 C235.28,194.41 234.63,193.85 236.14,192.89 C237.14,192.26 237.17,191.96 236.48,192.05 C237.71,191.49 239.18,190.86 240.75,190.23 C245.01,188.54 256.83,183.70 267.00,179.46 C277.17,175.23 289.10,170.30 293.50,168.51 C327.19,154.78 334.55,151.69 336.40,150.51 C337.55,149.77 340.52,148.63 342.99,147.98 C349.92,146.15 352.94,144.50 360.78,135.62 ZM 512.00 0.00 L 512.00 308.42 C512.00,190.56 511.63,105.17 511.11,105.17 L 511.11 105.17 C510.63,105.35 506.76,109.66 502.53,114.75 C498.29,119.84 494.30,124.00 493.66,124.00 C493.01,124.00 486.86,120.10 479.99,115.33 C460.07,101.50 452.71,96.72 451.17,96.61 L 451.16 96.61 C450.83,96.58 450.56,96.56 450.34,96.65 C449.96,96.81 449.72,97.28 449.51,98.60 C449.70,97.10 449.87,96.50 450.06,96.50 C450.18,96.50 450.39,93.12 450.53,89.00 C450.85,79.51 453.11,74.36 460.37,66.50 C463.43,63.20 467.85,58.38 470.21,55.79 C473.42,52.27 475.00,51.23 476.50,51.65 C477.30,51.88 477.74,51.96 477.86,51.86 C481.36,57.55 489.79,70.34 503.23,90.34 C504.17,91.73 505.00,93.03 505.75,94.20 C507.96,97.63 509.39,99.85 510.31,99.66 C512.02,99.30 512.01,90.73 511.97,66.34 C511.97,61.86 511.96,56.85 511.97,51.25 ZM 151.74 497.61 C151.25,497.83 150.77,497.98 150.28,498.10 C146.22,499.07 39.50,499.09 10.91,498.34 C10.91,498.33 10.92,498.33 10.92,498.32 C22.85,498.58 48.82,498.73 78.42,498.66 C129.65,498.55 146.25,498.37 151.74,497.61 ZM 386.63 104.79 C385.95,105.61 385.45,106.21 385.21,106.50 C378.06,115.22 371.02,123.63 365.34,130.30 C366.50,128.92 367.75,127.42 369.10,125.79 C376.99,116.28 384.22,107.60 385.17,106.50 C385.63,105.96 386.12,105.39 386.63,104.79 ZM 259.88 388.89 C260.63,389.87 261.44,391.22 262.08,392.64 C263.30,395.34 264.38,397.72 265.33,399.82 C262.64,393.96 260.98,390.62 259.88,388.89 ZM 477.33 51.00 C477.31,50.97 477.28,50.94 477.25,50.91 C476.56,50.19 476.00,49.28 476.00,48.89 C476.00,48.87 476.03,48.82 476.08,48.74 C476.24,49.12 476.66,49.88 477.33,51.00 ZM 370.26 307.43 C373.66,310.03 378.25,313.43 383.35,317.14 C377.84,313.14 372.80,309.41 368.97,306.49 C369.36,306.78 369.79,307.09 370.26,307.43 ZM 397.09 92.38 C401.07,87.58 404.38,83.52 405.00,82.61 C404.29,83.64 400.93,87.79 397.09,92.38 ZM 334.33 327.49 C334.26,327.99 334.19,328.49 334.12,329.00 C333.23,335.32 332.47,340.63 331.83,345.12 C332.47,340.62 333.23,335.31 334.12,329.00 C334.19,328.48 334.26,327.98 334.33,327.49 ZM 3.95 497.97 C3.94,497.96 3.94,497.96 3.93,497.96 C3.73,497.83 3.84,497.58 4.27,497.20 C3.87,497.57 3.77,497.82 3.95,497.97 Z" fill="rgb(254,151,2)"/>
+</g>
+</svg>
+          </div>
+        </div>
+        <div class="num">SISTEMA 02 · EVORA FARMA</div>
+        <h1>Canguru</h1>
+        <div class="underline"></div>
+        <div class="tagline">Gerador de impressos de endereços</div>
+        <p class="desc">
+          Seleciona rotas de entrega cadastradas na Vuupt e gera/imprime etiquetas de endereço em
+          impressora térmica (72mm), uma por pacote, prontas pro motoboy — com controle de
+          pago/a pagar direto na etiqueta.
+        </p>
+        <div class="marquee-wrap">
+          <div class="marquee">
+            <span class="tag">Integração Vuupt</span>
+            <span class="tag">Etiquetas térmicas 72mm</span>
+            <span class="tag">Pago / A Pagar</span>
+            <span class="tag">Login via Zoho</span>
+            <span class="tag">Admin / Operador</span>
+            <span class="tag">Integração Vuupt</span>
+            <span class="tag">Etiquetas térmicas 72mm</span>
+            <span class="tag">Pago / A Pagar</span>
+            <span class="tag">Login via Zoho</span>
+            <span class="tag">Admin / Operador</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 3 — TRACKHUB -->
+    <div class="panel" id="p3">
+      <div class="dotfield" data-count="10"></div>
+      <div class="center">
+        <div class="ring-wrap">
+          <div class="ring"></div>
+          <div class="ring r2"></div>
+          <div class="logo-plate">
+            <svg viewBox="0 0 32 32">
+              <rect width="32" height="32" rx="6" fill="#ece7dc"/>
+              <g fill="#1b4b7a">
+                <rect x="6" y="8" width="2" height="12"/>
+                <rect x="10" y="8" width="3.5" height="12"/>
+                <rect x="16" y="8" width="1.5" height="12"/>
+                <rect x="19.5" y="8" width="2.5" height="12"/>
+              </g>
+              <path d="M6 24 h13" stroke="#c9c0ac" stroke-width="1.4"/>
+              <path d="M17 24 l3 3 5.5 -6" fill="none" stroke="#3f7d4f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="num">SISTEMA 03 · EVORA FARMA</div>
+        <h1>TrackHub</h1>
+        <div class="underline"></div>
+        <div class="tagline">Consulta unificada de rastreamento</div>
+        <p class="desc">
+          Consulta unificada de rastreamento — Frenet, Melhor Envio e Vuupt — por CPF ou nome,
+          substituindo a checagem manual em 3 painéis separados, com resultados em tempo real e
+          linha do tempo por remessa.
+        </p>
+        <div class="marquee-wrap">
+          <div class="marquee">
+            <span class="tag">Frenet + Melhor Envio + Vuupt</span>
+            <span class="tag">Busca por CPF ou nome</span>
+            <span class="tag">Linha do tempo de eventos</span>
+            <span class="tag">Status em tempo real</span>
+            <span class="tag">Login via Zoho</span>
+            <span class="tag">Frenet + Melhor Envio + Vuupt</span>
+            <span class="tag">Busca por CPF ou nome</span>
+            <span class="tag">Linha do tempo de eventos</span>
+            <span class="tag">Status em tempo real</span>
+            <span class="tag">Login via Zoho</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const track = document.getElementById('track');
+  const dots = Array.from(document.querySelectorAll('.dotb'));
+  const counter = document.getElementById('counter');
+  let idx = 0;
+  const total = 3;
+
+  function render(){
+    track.style.transform = `translateX(-${idx*33.3333}%)`;
+    dots.forEach((d,i)=>d.classList.toggle('active', i===idx));
+    counter.textContent = String(idx+1).padStart(2,'0') + ' / 0' + total;
+    // restart entrance animations on current panel
+    const panel = document.querySelectorAll('.panel')[idx];
+    panel.querySelectorAll('.logo-plate,.num,h1,.underline,.tagline,.desc,.marquee-wrap').forEach(node=>{
+      node.style.animation='none';
+      void node.offsetWidth;
+      node.style.animation='';
+    });
+  }
+
+  document.getElementById('nextBtn').addEventListener('click',()=>{ idx=(idx+1)%total; render(); });
+  document.getElementById('prevBtn').addEventListener('click',()=>{ idx=(idx-1+total)%total; render(); });
+  dots.forEach(d=>d.addEventListener('click',()=>{ idx=+d.dataset.i; render(); }));
+
+  window.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'){ idx=(idx+1)%total; render(); }
+    if(e.key==='ArrowLeft'){ idx=(idx-1+total)%total; render(); }
+  });
+
+  let touchX=null;
+  document.addEventListener('touchstart', e=>{ touchX=e.touches[0].clientX; });
+  document.addEventListener('touchend', e=>{
+    if(touchX===null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if(dx>50){ idx=(idx-1+total)%total; render(); }
+    else if(dx<-50){ idx=(idx+1)%total; render(); }
+    touchX=null;
+  });
+
+  // floating dot fields
+  document.querySelectorAll('.dotfield').forEach(container=>{
+    const count = +container.dataset.count || 10;
+    for(let i=0;i<count;i++){
+      const d = document.createElement('div');
+      const size = 3 + Math.random()*5;
+      d.className='df';
+      d.style.width=size+'px'; d.style.height=size+'px';
+      d.style.left = Math.random()*100+'%';
+      d.style.bottom = -20+'px';
+      d.style.opacity = 0.15 + Math.random()*0.25;
+      const dur = 14 + Math.random()*16;
+      const delay = Math.random()*dur;
+      d.style.animation = `drift-y ${dur}s linear ${-delay}s infinite`;
+      container.appendChild(d);
+    }
+  });
+
+  render();
+</script>
+
+</body>
+</html>
