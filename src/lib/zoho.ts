@@ -13,14 +13,11 @@ const ZOHO_ACCOUNTS_URL = 'https://accounts.zoho.com';
  * api-console.zoho.com precisa ter `{origem}/api/auth/zoho/callback`
  * cadastrado como Redirect URI (ver aba Zoho de /admin/configuracoes).
  *
- * ⚠️ Diferente do RHiD (onde validei o formato exato contra
- * docs/integrations/rhid-swagger.json e uma conta real), o endpoint de
- * identidade abaixo (`/oauth/v2/userinfo`) e os nomes dos campos
- * (`Email`/`Display_Name`) foram implementados a partir do conhecimento
- * geral da API do Zoho, sem uma conta real pra testar o round-trip
- * completo. Teste com uma conta Zoho de verdade antes de confiar nisso em
- * produção — se os campos vierem diferentes, é só ajustar
- * `exchangeZohoLoginCode` abaixo.
+ * Endpoint de identidade e formato de autenticação conferidos contra uma
+ * implementação irmã que já roda em produção (trackhub, mesmo autor): é
+ * `/oauth/user/info` com header `Zoho-oauthtoken {token}` — não
+ * `/oauth/v2/userinfo` com `Bearer` (que não existe/não é aceito pela API do
+ * Zoho e falhava aqui sem deixar rastro nenhum).
  */
 
 // Domínios oficiais de accounts-server do Zoho, por data center (ver docs do
@@ -52,7 +49,7 @@ export function sanitizeZohoAccountsServer(url: string | null | undefined): stri
 
 export function buildZohoLoginAuthorizeUrl(clientId: string, redirectUri: string, state: string) {
   const params = new URLSearchParams({
-    scope: 'AaaServer.profile.Read',
+    scope: 'aaaserver.profile.Read',
     client_id: clientId,
     response_type: 'code',
     redirect_uri: redirectUri,
@@ -97,14 +94,14 @@ export async function exchangeZohoLoginCode(
   const tokenData = await tokenRes.json();
   if (!tokenData.access_token) throw new Error('Zoho não retornou access_token.');
 
-  const infoRes = await fetch(`${accountsUrl}/oauth/v2/userinfo`, {
-    headers: { Authorization: `Bearer ${tokenData.access_token}` },
+  const infoRes = await fetch(`${accountsUrl}/oauth/user/info`, {
+    headers: { Authorization: `Zoho-oauthtoken ${tokenData.access_token}` },
   });
   if (!infoRes.ok) throw new Error(`Falha ao obter identidade do Zoho (${infoRes.status}): ${await infoRes.text()}`);
   const info = await infoRes.json();
 
-  const email: string | undefined = info.Email ?? info.email;
-  const nome: string = info.Display_Name ?? info.name ?? email ?? 'Sem nome';
+  const email: string | undefined = info.Email;
+  const nome: string = info.Display_Name ?? email ?? 'Sem nome';
   if (!email) throw new Error('O Zoho não retornou um e-mail pra essa conta.');
 
   return { email: email.toLowerCase(), nome };
