@@ -143,7 +143,7 @@ export default function RhidSection() {
               type="email"
               value={integrationEmail}
               onChange={(e) => setIntegrationEmail(e.target.value)}
-              placeholder="integracao@evorafarma.com.br"
+              placeholder="integracao@suaempresa.com.br"
               required
             />
           </Field>

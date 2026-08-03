@@ -89,7 +89,7 @@ export default function AdminShell({
         <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center p-1.5 shrink-0">
           <LogoMark className="w-full h-full" />
         </div>
-        <div className="font-bold text-[14.5px]">Evora Farma</div>
+        <div className="font-bold text-[14.5px]">Aponta</div>
       </header>
 
       {open && (
@@ -114,7 +114,7 @@ export default function AdminShell({
             <LogoMark className="w-full h-full" />
           </div>
           <div className="flex-1">
-            <div className="font-bold text-[14.5px]">Evora Farma</div>
+            <div className="font-bold text-[14.5px]">Aponta</div>
             <div className="text-[10.5px] text-white/55">Painel de gestão de ponto</div>
           </div>
           <button

@@ -92,7 +92,7 @@ function LoginForm() {
             <LogoMark className="w-full h-full" />
           </div>
           <div>
-            <div className="font-bold text-[15px]">Evora Farma</div>
+            <div className="font-bold text-[15px]">Aponta</div>
             <div className="text-xs text-inksoft">Ponto e chamados com o RH</div>
           </div>
         </div>
