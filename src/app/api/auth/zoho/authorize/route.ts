@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const config = await prisma.zohoConfig.findUnique({ where: { id: 1 } });
   if (!config?.clientId) {
-    const url = new URL('/login', req.url);
+    const url = new URL('/login', getPublicOrigin(req));
     url.searchParams.set('erroZoho', 'nao_configurado');
     return NextResponse.redirect(url);
   }

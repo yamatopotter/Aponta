@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const state = req.nextUrl.searchParams.get('state');
   const stateCookie = req.cookies.get('zoho_login_state')?.value;
 
-  const loginUrl = new URL('/login', req.url);
+  const loginUrl = new URL('/login', getPublicOrigin(req));
 
   function recusar(motivo: string) {
     loginUrl.searchParams.set('erroZoho', motivo);
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       req
     );
 
-    const res = NextResponse.redirect(new URL('/admin/justificativas', req.url));
+    const res = NextResponse.redirect(new URL('/admin/justificativas', getPublicOrigin(req)));
     res.cookies.delete('zoho_login_state');
     return res;
   } catch {
