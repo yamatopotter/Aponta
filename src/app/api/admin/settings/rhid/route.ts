@@ -17,8 +17,8 @@ export async function GET() {
 
   const config = await prisma.rhidConfig.findUnique({ where: { id: 1 } });
   return NextResponse.json({
-    apiBaseUrl: config?.apiBaseUrl ?? process.env.RHID_API_BASE_URL ?? 'https://www.rhid.com.br/v2/api.svc',
-    integrationEmail: config?.integrationEmail ?? process.env.RHID_INTEGRATION_EMAIL ?? '',
+    apiBaseUrl: config?.apiBaseUrl ?? 'https://www.rhid.com.br/v2/api.svc',
+    integrationEmail: config?.integrationEmail ?? '',
     conectado: Boolean(config?.integrationEmail && config?.integrationPasswordEnc),
     // senha nunca volta para o front-end
   });

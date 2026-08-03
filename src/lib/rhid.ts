@@ -15,9 +15,12 @@ import { decryptSecret } from './crypto';
  * Peça ao suporte RHiD/ControliD um usuário de integração dedicado, com o
  * mínimo de permissão necessária (leitura de Person e de Apuração de Ponto).
  *
- * A credencial é configurável em /admin/configuracoes (aba RHiD) (guardada
- * criptografada em RhidConfig); se não estiver configurada por lá, cai para
- * as variáveis de ambiente RHID_* no .env.
+ * A credencial é configurável em /admin/configuracoes (aba RHiD), guardada
+ * criptografada em RhidConfig. Base URL e e-mail já vêm com valor padrão
+ * desde a primeira inicialização (ver migration
+ * 20260803000000_seed_rhid_config_default); só a senha, por ser segredo, não
+ * tem padrão e precisa ser preenchida por lá — se não estiver, cai para
+ * RHID_INTEGRATION_PASSWORD no .env (útil pra bootstrap sem passar pela UI).
  *
  * Endpoints e formatos conferidos contra swagger-rhid.json (doc oficial):
  * basePath da API é `/v2/api.svc` — não só `/v2`.
@@ -34,8 +37,8 @@ interface RhidCredentials {
 export async function getRhidCredentials(): Promise<RhidCredentials | null> {
   const config = await prisma.rhidConfig.findUnique({ where: { id: 1 } });
 
-  const baseUrl = config?.apiBaseUrl || process.env.RHID_API_BASE_URL || DEFAULT_BASE_URL;
-  const email = config?.integrationEmail || process.env.RHID_INTEGRATION_EMAIL;
+  const baseUrl = config?.apiBaseUrl || DEFAULT_BASE_URL;
+  const email = config?.integrationEmail;
   const password = config?.integrationPasswordEnc
     ? decryptSecret(config.integrationPasswordEnc)
     : process.env.RHID_INTEGRATION_PASSWORD;
@@ -53,7 +56,7 @@ async function loginIntegracao(): Promise<string> {
   const creds = await getRhidCredentials();
   if (!creds) {
     throw new Error(
-      'Credencial de integração do RHiD não configurada. Preencha em /admin/configuracoes (aba RHiD) (ou RHID_INTEGRATION_EMAIL/RHID_INTEGRATION_PASSWORD no .env).'
+      'Credencial de integração do RHiD não configurada. Preencha em /admin/configuracoes (aba RHiD) (ou RHID_INTEGRATION_PASSWORD no .env).'
     );
   }
 

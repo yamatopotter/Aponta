@@ -391,8 +391,7 @@ comportamento do app:
 | `DATABASE_URL` | conexão Postgres (Prisma) |
 | `AUTH_SECRET` | assina o cookie de sessão (JWT) |
 | `APP_ENCRYPTION_KEY` | criptografa segredos do RHiD/Zoho em repouso |
-| `RHID_API_BASE_URL` | base da API do RHiD — **precisa terminar em `/api.svc`** (ver `docs/integrations/rhid-swagger.json`) |
-| `RHID_INTEGRATION_EMAIL` / `RHID_INTEGRATION_PASSWORD` | credencial de integração dedicada no RHiD (não usar login pessoal de admin); fallback se a aba RHiD de `/admin/configuracoes` não estiver preenchida |
+| `RHID_INTEGRATION_PASSWORD` | senha da credencial de integração dedicada no RHiD (não usar login pessoal de admin); fallback se a aba RHiD de `/admin/configuracoes` não estiver preenchida. Base URL e e-mail não têm variável de ambiente — já vêm com valor padrão pelo banco (`RhidConfig`, seed automático na 1ª migration) e são editáveis por lá |
 | `SYNC_INTERVAL_MINUTES` | intervalo (minutos) entre rodadas do `worker/sync-worker.ts` — padrão 360 (6h) |
 
 ## 7. Decisões de design que vale lembrar

@@ -32,8 +32,9 @@ resto do sistema não precisa mudar.
 A doc oficial (`docs/integrations/rhid-swagger.json`, salva no repo) tem duas
 pegadinhas que já causaram bug aqui:
 
-- O `basePath` da API é `/v2/api.svc`, não só `/v2` — `RHID_API_BASE_URL`
-  precisa terminar em `/api.svc`.
+- O `basePath` da API é `/v2/api.svc`, não só `/v2` — a base URL salva em
+  `RhidConfig` (aba RHiD de `/admin/configuracoes`) precisa terminar em
+  `/api.svc`.
 - `GET /apuracao_ponto` (e `POST /justifications`) retornam o corpo como uma
   **string JSON dentro da resposta**, não como array direto — precisa de um
   segundo `JSON.parse` (já tratado em `src/lib/rhid.ts`).
@@ -138,17 +139,17 @@ openssl rand -hex 32      # -> APP_ENCRYPTION_KEY
 
 Peça ao suporte RHiD/Control iD **um usuário de integração dedicado**
 (não o login pessoal de um admin) com permissão de leitura sobre `Person` e
-`Apuração de Ponto`. Duas formas de configurar, a que for mais conveniente:
+`Apuração de Ponto`. Base URL e e-mail já vêm com valor padrão desde a
+primeira migration (`RhidConfig`) — só falta a senha, que é secreta e não
+tem padrão. Duas formas de preenchê-la, a que for mais conveniente:
 
 - Pela aba **RHiD** em **RH → Configurações** (`/admin/configuracoes?tab=rhid`)
-  — fica salvo criptografado no banco (`RhidConfig`), com botões para testar
+  — fica salva criptografada no banco (`RhidConfig`), com botões para testar
   a conexão e disparar `syncEmployeesFromRhid()` manualmente. O resultado da
   sincronização é o que aparece em **Funcionários**.
-- Ou no `.env`, como antes (usado como fallback se a tela acima não tiver
-  sido preenchida):
+- Ou no `.env`, como fallback se a tela acima não tiver sido preenchida:
 
 ```
-RHID_INTEGRATION_EMAIL=...
 RHID_INTEGRATION_PASSWORD=...
 ```
 
