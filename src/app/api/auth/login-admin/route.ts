@@ -27,13 +27,16 @@ export async function POST(req: NextRequest) {
 
   if (!admin.ativo) return NextResponse.json({ error: 'Este usuário está desativado. Fale com um administrador.' }, { status: 403 });
 
-  await createSession({
-    role: 'ADMIN',
-    adminId: admin.id,
-    username: admin.username ?? parsed.data.username,
-    name: admin.name,
-    nivel: admin.nivel,
-  });
+  await createSession(
+    {
+      role: 'ADMIN',
+      adminId: admin.id,
+      username: admin.username ?? parsed.data.username,
+      name: admin.name,
+      nivel: admin.nivel,
+    },
+    req
+  );
 
   return NextResponse.json({ mustChangePassword: admin.mustChangePassword });
 }

@@ -38,13 +38,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Cadastro inativo. Fale com o RH.' }, { status: 403 });
   }
 
-  await createSession({
-    role: 'EMPLOYEE',
-    employeeId: employee.id,
-    cpf: employee.cpf,
-    nome: employee.nome,
-    unidade: employee.unidade,
-  });
+  await createSession(
+    {
+      role: 'EMPLOYEE',
+      employeeId: employee.id,
+      cpf: employee.cpf,
+      nome: employee.nome,
+      unidade: employee.unidade,
+    },
+    req
+  );
 
   return NextResponse.json({ ok: true });
 }

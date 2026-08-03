@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { buildZohoLoginAuthorizeUrl } from '@/lib/zoho';
+import { isSecureRequest } from '@/lib/auth';
 
 // Sem cookies()/headers() explícitos, o Next tenta pré-renderizar essa rota
 // como estática no build — e falha, porque ela consulta o banco. Precisa
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
   // — não dá pra usar sessão porque a pessoa ainda não está logada.
   res.cookies.set('zoho_login_state', state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecureRequest(req),
     sameSite: 'lax',
     path: '/',
     maxAge: 300,

@@ -1,8 +1,19 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import type { NextRequest } from 'next/server';
 
 const COOKIE_NAME = 'evora_session';
 const SESSION_DURATION_SECONDS = 60 * 60 * 10; // 10h
+
+// Cookie "Secure" só faz sentido (e só é aceito pelo navegador) numa conexão
+// HTTPS de verdade — não basta checar NODE_ENV, porque o primeiro acesso em
+// produção costuma ser via HTTP direto (IP do servidor), antes de configurar
+// o reverse proxy com TLS. Sem isso, o navegador descarta o cookie
+// silenciosamente e a sessão nunca persiste (login "funciona" mas a
+// próxima requisição vem sem cookie, como se não tivesse logado).
+export function isSecureRequest(req: NextRequest) {
+  return req.headers.get('x-forwarded-proto') === 'https' || req.nextUrl.protocol === 'https:';
+}
 
 export type NivelAdmin = 'RH' | 'ADMIN';
 
@@ -16,7 +27,7 @@ function getSecretKey() {
   return new TextEncoder().encode(secret);
 }
 
-export async function createSession(payload: SessionPayload) {
+export async function createSession(payload: SessionPayload, req: NextRequest) {
   const token = await new SignJWT({ ...payload } as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -25,7 +36,7 @@ export async function createSession(payload: SessionPayload) {
 
   cookies().set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecureRequest(req),
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_DURATION_SECONDS,

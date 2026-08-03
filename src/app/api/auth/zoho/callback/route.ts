@@ -33,13 +33,16 @@ export async function GET(req: NextRequest) {
       return recusar('nao_cadastrado');
     }
 
-    await createSession({
-      role: 'ADMIN',
-      adminId: admin.id,
-      username: admin.username ?? admin.email ?? admin.name,
-      name: admin.name,
-      nivel: admin.nivel,
-    });
+    await createSession(
+      {
+        role: 'ADMIN',
+        adminId: admin.id,
+        username: admin.username ?? admin.email ?? admin.name,
+        name: admin.name,
+        nivel: admin.nivel,
+      },
+      req
+    );
 
     const res = NextResponse.redirect(new URL('/admin/justificativas', req.url));
     res.cookies.delete('zoho_login_state');
