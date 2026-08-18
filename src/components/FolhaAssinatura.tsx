@@ -220,7 +220,11 @@ export default function FolhaAssinatura() {
           // por não ter marcação ainda — não é uma pendência de verdade, então não alertamos.
           const diaFuturo = dataCurta > hoje;
           const diaEmAberto = diaFuturo || éHoje;
-          const alerta = !diaEmAberto && (dia.possuiPendencias || dia.faltaDiaInteiro);
+          // possuiPendencias/faltaDiaInteiro só cobrem problema que falta corrigir
+          // (falta/atraso). Hora extra vem à parte, em toolTipAlert/colorAlert, sem
+          // marcar possuiPendencias — não é uma pendência que precise de
+          // justificativa, só um aviso informativo (ex.: "Extra acima de 10 min").
+          const alerta = !diaEmAberto && (dia.possuiPendencias || dia.faltaDiaInteiro || !!dia.toolTipAlert);
           const situacao = dia.folga
             ? 'Folga'
             : dia.holiday

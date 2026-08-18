@@ -7,11 +7,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { formatBytes } from '@/lib/utils';
 
 export type JustificativaAdmin = {
   id: string;
   dataOcorrencia: string;
-  tipo: 'FALTA' | 'ATRASO' | 'SEM_SAIDA' | 'AJUSTE';
+  tipo: { id: string; label: string };
   motivo: string;
   comentario: string | null;
   cid: string | null;
@@ -23,10 +24,8 @@ export type JustificativaAdmin = {
   decididoPor: { id: string; name: string } | null;
   decididoEm: string | null;
   employee: { nome: string; cargo: string | null; unidade: string | null };
-  anexos: { id: string; nomeArquivo: string; url: string }[];
+  anexos: { id: string; nomeArquivo: string; url: string; tamanhoBytes: number | null }[];
 };
-
-const TIPO_LABEL = { FALTA: 'Falta', ATRASO: 'Atraso', SEM_SAIDA: 'Sem saída', AJUSTE: 'Ajuste' };
 
 export default function JustificativaDetailModal({
   item,
@@ -75,7 +74,7 @@ export default function JustificativaDetailModal({
 
         <Label>Ocorrência</Label>
         <Box>
-          <b>{TIPO_LABEL[item.tipo]}</b> — {new Date(item.dataOcorrencia).toLocaleDateString('pt-BR')}
+          <b>{item.tipo.label}</b> — {new Date(item.dataOcorrencia).toLocaleDateString('pt-BR')}
           {item.issueDetectado && <div className="mt-1">{item.issueDetectado}</div>}
         </Box>
 
@@ -91,9 +90,17 @@ export default function JustificativaDetailModal({
             </div>
           )}
           {item.anexos.map((a) => (
-            <div key={a.id} className="flex items-center gap-1 mt-1 text-xs text-info">
-              <Paperclip className="h-3 w-3" /> {a.nomeArquivo}
-            </div>
+            <a
+              key={a.id}
+              href={`/api/anexos/${a.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 mt-1 text-xs text-info underline underline-offset-2"
+            >
+              <Paperclip className="h-3 w-3 shrink-0" />
+              {a.nomeArquivo}
+              {a.tamanhoBytes && <span className="text-inksoft">({formatBytes(a.tamanhoBytes)})</span>}
+            </a>
           ))}
         </Box>
 

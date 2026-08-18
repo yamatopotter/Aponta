@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import AnexoPicker from '@/components/AnexoPicker';
 import { cn, formatBytes } from '@/lib/utils';
 
 type Categoria = { id: string; label: string };
@@ -367,6 +368,7 @@ function NovoChamadoModal({
 }) {
   const [categoriaId, setCategoriaId] = useState(categorias[0]?.id ?? '');
   const [descricao, setDescricao] = useState('');
+  const [arquivos, setArquivos] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -375,11 +377,12 @@ function NovoChamadoModal({
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/chamados', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoriaId, descricao }),
-      });
+      const formData = new FormData();
+      formData.set('categoriaId', categoriaId);
+      formData.set('descricao', descricao);
+      arquivos.forEach((f) => formData.append('anexos', f));
+
+      const res = await fetch('/api/chamados', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Não foi possível enviar.');
@@ -413,11 +416,8 @@ function NovoChamadoModal({
         <Label>Descreva o que você precisa</Label>
         <Textarea className="min-h-[90px]" value={descricao} onChange={(e) => setDescricao(e.target.value)} required />
 
-        <p className="flex items-start gap-1.5 text-[11.5px] text-inksoft">
-          <Paperclip className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-          Ainda não dá para anexar arquivo nesta primeira mensagem, mas dá pra anexar depois, nas
-          mensagens da conversa com o RH.
-        </p>
+        <Label>Anexo (opcional)</Label>
+        <AnexoPicker arquivos={arquivos} onChange={setArquivos} />
 
         {error && (
           <div className="flex items-center gap-2 text-danger text-[13px] bg-danger-soft rounded-lg px-3 py-2">

@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { JustificativaAdmin } from './JustificativaDetailModal';
 
-const TIPO_LABEL = { FALTA: 'Falta', ATRASO: 'Atraso', SEM_SAIDA: 'Sem saída', AJUSTE: 'Ajuste' };
 const STATUS_LABEL = { PENDENTE: 'Pendente', EM_ANALISE: 'Pendente', APROVADO: 'Aprovado', REPROVADO: 'Reprovado' };
 const STATUS_VARIANT: Record<JustificativaAdmin['status'], 'warn' | 'default' | 'destructive'> = {
   PENDENTE: 'warn',
@@ -46,7 +45,7 @@ export default function JustificativasTable({
               <div className="font-bold">{j.employee.nome}</div>
               <div className="text-xs text-inksoft">{j.employee.cargo}</div>
             </TableCell>
-            <TableCell>{TIPO_LABEL[j.tipo]}</TableCell>
+            <TableCell>{j.tipo.label}</TableCell>
             <TableCell>{new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')}</TableCell>
             <TableCell className="max-w-[220px] truncate">{j.motivo}</TableCell>
             <TableCell>{j.employee.unidade}</TableCell>

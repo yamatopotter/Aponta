@@ -44,12 +44,6 @@ const COR_JUSTIFICATIVA_STATUS: Record<string, string> = {
   REPROVADO: COR_DANGER,
 };
 
-const LABEL_TIPO: Record<string, string> = {
-  FALTA: 'Falta',
-  ATRASO: 'Atraso',
-  SEM_SAIDA: 'Sem saída',
-  AJUSTE: 'Ajuste',
-};
 
 const LABEL_CHAMADO_STATUS: Record<string, string> = {
   ABERTO: 'Aberto',
@@ -113,7 +107,7 @@ export default function AdminDashboardPage() {
     ? agruparPorLabel(data.justificativasPorStatus, LABEL_JUSTIFICATIVA_STATUS, COR_JUSTIFICATIVA_STATUS)
     : [];
   const justificativasTipoItems: BreakdownItem[] = data
-    ? data.justificativasPorTipo.map((t) => ({ label: LABEL_TIPO[t.tipo] ?? t.tipo, value: t.quantidade, color: COR_NEUTRA }))
+    ? data.justificativasPorTipo.map((t) => ({ label: t.tipo, value: t.quantidade, color: COR_NEUTRA }))
     : [];
   const chamadosStatusItems = data ? agruparPorLabel(data.chamadosPorStatus, LABEL_CHAMADO_STATUS, COR_CHAMADO_STATUS) : [];
 

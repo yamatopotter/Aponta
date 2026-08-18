@@ -3,11 +3,14 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { salvarAnexo, ArquivoInvalidoError } from '@/lib/storage';
+
+const MAX_ANEXOS = 5;
 
 const createSchema = z.object({
   dataOcorrencia: z.string(), // yyyy-MM-dd
-  tipo: z.enum(['FALTA', 'ATRASO', 'SEM_SAIDA', 'AJUSTE']),
-  isAjuste: z.boolean().default(false),
+  tipoId: z.string().min(1),
+  isAjuste: z.coerce.boolean().default(false),
   issueDetectado: z.string().optional(),
   motivo: z.string().min(1),
   cid: z.string().optional(),
@@ -17,7 +20,6 @@ const createSchema = z.object({
   intervaloInicioCorreto: z.string().optional(),
   intervaloFimCorreto: z.string().optional(),
   comentario: z.string().optional(),
-  anexos: z.array(z.object({ nomeArquivo: z.string(), url: z.string() })).optional(),
 });
 
 // GET /api/justificativas
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
   if (session.role === 'EMPLOYEE') {
     const justificativas = await prisma.justificativa.findMany({
       where: { employeeId: session.employeeId },
-      include: { anexos: true },
+      include: { anexos: true, tipo: true },
       orderBy: { dataOcorrencia: 'desc' },
     });
 
@@ -82,30 +84,50 @@ export async function GET(req: NextRequest) {
           }
         : undefined,
     },
-    include: { employee: true, anexos: true, decididoPor: { select: { id: true, name: true } } },
+    include: { employee: true, anexos: true, tipo: true, decididoPor: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'desc' },
   });
   return NextResponse.json(justificativas);
 }
 
-// POST /api/justificativas — só o funcionário cria (justificativa ou pedido de ajuste)
+// POST /api/justificativas — só o funcionário cria (justificativa ou pedido de ajuste).
+// multipart/form-data: os campos de texto de createSchema + `anexos` (0 a 5 arquivos, opcional).
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== 'EMPLOYEE') {
     return NextResponse.json({ error: 'Apenas funcionários podem enviar justificativas.' }, { status: 403 });
   }
 
-  const parsed = createSchema.safeParse(await req.json());
+  const formData = await req.formData();
+  const campos = Object.fromEntries(
+    Array.from(formData.keys())
+      .filter((k) => k !== 'anexos')
+      .map((k) => [k, formData.get(k)])
+  );
+  const parsed = createSchema.safeParse(campos);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
   const data = parsed.data;
 
+  const arquivos = formData.getAll('anexos').filter((v): v is File => v instanceof File && v.size > 0);
+  if (arquivos.length > MAX_ANEXOS) {
+    return NextResponse.json({ error: `Máximo de ${MAX_ANEXOS} anexos.` }, { status: 400 });
+  }
+
+  let anexosSalvos;
+  try {
+    anexosSalvos = await Promise.all(arquivos.map((f) => salvarAnexo(f, session.employeeId)));
+  } catch (e) {
+    if (e instanceof ArquivoInvalidoError) return NextResponse.json({ error: e.message }, { status: 400 });
+    throw e;
+  }
+
   const justificativa = await prisma.justificativa.create({
     data: {
       employeeId: session.employeeId,
       dataOcorrencia: new Date(data.dataOcorrencia),
-      tipo: data.tipo,
+      tipoId: data.tipoId,
       isAjuste: data.isAjuste,
       issueDetectado: data.issueDetectado,
       motivo: data.motivo,
@@ -117,9 +139,9 @@ export async function POST(req: NextRequest) {
       intervaloFimCorreto: data.intervaloFimCorreto,
       comentario: data.comentario,
       status: 'EM_ANALISE',
-      anexos: data.anexos?.length ? { create: data.anexos } : undefined,
+      anexos: anexosSalvos.length ? { create: anexosSalvos } : undefined,
     },
-    include: { anexos: true },
+    include: { anexos: true, tipo: true },
   });
 
   return NextResponse.json(justificativa, { status: 201 });

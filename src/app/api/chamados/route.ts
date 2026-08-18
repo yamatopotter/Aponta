@@ -3,11 +3,13 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { salvarAnexo, ArquivoInvalidoError } from '@/lib/storage';
+
+const MAX_ANEXOS = 5;
 
 const createSchema = z.object({
   categoriaId: z.string().min(1),
   descricao: z.string().min(1, 'Descreva o que você precisa.'),
-  anexos: z.array(z.object({ nomeArquivo: z.string(), url: z.string() })).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -104,21 +106,39 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(comIndicadores);
 }
 
+// multipart/form-data: `categoriaId` + `descricao` + `anexos` (0 a 5 arquivos, opcional).
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role !== 'EMPLOYEE') {
     return NextResponse.json({ error: 'Apenas funcionários podem abrir chamados.' }, { status: 403 });
   }
 
-  const parsed = createSchema.safeParse(await req.json());
+  const formData = await req.formData();
+  const parsed = createSchema.safeParse({
+    categoriaId: formData.get('categoriaId'),
+    descricao: formData.get('descricao'),
+  });
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+
+  const arquivos = formData.getAll('anexos').filter((v): v is File => v instanceof File && v.size > 0);
+  if (arquivos.length > MAX_ANEXOS) {
+    return NextResponse.json({ error: `Máximo de ${MAX_ANEXOS} anexos.` }, { status: 400 });
+  }
+
+  let anexosSalvos;
+  try {
+    anexosSalvos = await Promise.all(arquivos.map((f) => salvarAnexo(f, session.employeeId)));
+  } catch (e) {
+    if (e instanceof ArquivoInvalidoError) return NextResponse.json({ error: e.message }, { status: 400 });
+    throw e;
+  }
 
   const chamado = await prisma.chamado.create({
     data: {
       employeeId: session.employeeId,
       categoriaId: parsed.data.categoriaId,
       descricao: parsed.data.descricao,
-      anexos: parsed.data.anexos?.length ? { create: parsed.data.anexos } : undefined,
+      anexos: anexosSalvos.length ? { create: anexosSalvos } : undefined,
     },
     include: { categoria: true, anexos: true },
   });

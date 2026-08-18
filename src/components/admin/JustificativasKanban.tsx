@@ -4,8 +4,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import type { JustificativaAdmin } from './JustificativaDetailModal';
 
-const TIPO_LABEL = { FALTA: 'Falta', ATRASO: 'Atraso', SEM_SAIDA: 'Sem saída', AJUSTE: 'Ajuste' };
-
 const COLUMNS: { status: JustificativaAdmin['status'][]; title: string; dot: string }[] = [
   { status: ['PENDENTE', 'EM_ANALISE'], title: 'Aguardando aprovação', dot: 'bg-warn' },
   { status: ['APROVADO'], title: 'Aprovado', dot: 'bg-primary' },
@@ -50,7 +48,7 @@ export default function JustificativasKanban({
                     </Avatar>
                     <div className="font-bold text-[13px] truncate">{j.employee.nome}</div>
                     <Badge variant="outline" className="ml-auto shrink-0 text-[10px] px-2 py-0.5">
-                      {TIPO_LABEL[j.tipo]}
+                      {j.tipo.label}
                     </Badge>
                   </div>
                   <div className="text-xs font-semibold">{j.motivo}</div>

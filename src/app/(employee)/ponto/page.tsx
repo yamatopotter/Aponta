@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, TriangleAlert } from 'lucide-react';
+import { Paperclip, Plus, TriangleAlert } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,25 +11,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import AnexoPicker from '@/components/AnexoPicker';
 import DivergenciasFolha from '@/components/DivergenciasFolha';
 import FolhaAssinatura from '@/components/FolhaAssinatura';
+import { formatBytes } from '@/lib/utils';
+import { useTiposJustificativa } from '@/lib/useTiposJustificativa';
 
 type Justificativa = {
   id: string;
   dataOcorrencia: string;
-  tipo: 'FALTA' | 'ATRASO' | 'SEM_SAIDA' | 'AJUSTE';
+  tipo: { id: string; label: string };
   motivo: string;
   comentario: string | null;
   status: 'PENDENTE' | 'EM_ANALISE' | 'APROVADO' | 'REPROVADO';
   isAjuste: boolean;
   motivoReprovacao: string | null;
-};
-
-const TIPO_LABEL: Record<Justificativa['tipo'], string> = {
-  FALTA: 'Falta',
-  ATRASO: 'Atraso',
-  SEM_SAIDA: 'Sem saída',
-  AJUSTE: 'Ajuste',
+  anexos: { id: string; nomeArquivo: string; tamanhoBytes: number | null }[];
 };
 
 const STATUS_VARIANT: Record<Justificativa['status'], 'warn' | 'info' | 'default' | 'destructive'> = {
@@ -119,12 +116,29 @@ export default function PontoPage() {
                 <li key={j.id} className="border border-line rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-inksoft">
-                      {new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')} · {TIPO_LABEL[j.tipo]}
+                      {new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')} · {j.tipo.label}
                     </span>
                     <Badge variant={STATUS_VARIANT[j.status]}>{STATUS_LABEL[j.status]}</Badge>
                   </div>
                   <div className="text-sm font-semibold">{j.motivo}</div>
                   {j.comentario && <div className="text-xs text-inksoft mt-1">{j.comentario}</div>}
+                  {j.anexos.length > 0 && (
+                    <div className="flex flex-col gap-1 mt-1.5">
+                      {j.anexos.map((a) => (
+                        <a
+                          key={a.id}
+                          href={`/api/anexos/${a.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[11.5px] text-secondary underline underline-offset-2"
+                        >
+                          <Paperclip className="h-3 w-3 shrink-0" />
+                          {a.nomeArquivo}
+                          {a.tamanhoBytes && <span className="text-inksoft">({formatBytes(a.tamanhoBytes)})</span>}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   {j.status === 'REPROVADO' && j.motivoReprovacao && (
                     <div className="flex items-start gap-1.5 text-xs text-danger mt-2 bg-danger-soft rounded-lg px-2 py-1.5">
                       <TriangleAlert className="h-3.5 w-3.5 shrink-0 mt-0.5" />
@@ -161,23 +175,33 @@ function NovaJustificativaModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const tipos = useTiposJustificativa();
   const [dataOcorrencia, setDataOcorrencia] = useState(dataInicial ?? '');
-  const [tipo, setTipo] = useState<Justificativa['tipo']>('FALTA');
+  const [tipoId, setTipoId] = useState('');
   const [motivo, setMotivo] = useState('');
   const [comentario, setComentario] = useState('');
+  const [arquivos, setArquivos] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!tipoId && tipos.length > 0) setTipoId(tipos[0].id);
+  }, [tipos, tipoId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/justificativas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataOcorrencia, tipo, motivo, comentario, isAjuste: false }),
-      });
+      const formData = new FormData();
+      formData.set('dataOcorrencia', dataOcorrencia);
+      formData.set('tipoId', tipoId);
+      formData.set('motivo', motivo);
+      formData.set('comentario', comentario);
+      formData.set('isAjuste', 'false');
+      arquivos.forEach((f) => formData.append('anexos', f));
+
+      const res = await fetch('/api/justificativas', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? 'Não foi possível enviar.');
@@ -198,15 +222,16 @@ function NovaJustificativaModal({
         <Input type="date" value={dataOcorrencia} onChange={(e) => setDataOcorrencia(e.target.value)} required />
 
         <Label>Tipo</Label>
-        <Select value={tipo} onValueChange={(v) => setTipo(v as Justificativa['tipo'])}>
+        <Select value={tipoId} onValueChange={setTipoId}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="FALTA">Falta</SelectItem>
-            <SelectItem value="ATRASO">Atraso</SelectItem>
-            <SelectItem value="SEM_SAIDA">Sem marcação de saída</SelectItem>
-            <SelectItem value="AJUSTE">Ajuste em dia já preenchido</SelectItem>
+            {tipos.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
@@ -215,6 +240,9 @@ function NovaJustificativaModal({
 
         <Label>Comentário (opcional)</Label>
         <Textarea className="min-h-[70px]" value={comentario} onChange={(e) => setComentario(e.target.value)} />
+
+        <Label>Anexo (opcional)</Label>
+        <AnexoPicker arquivos={arquivos} onChange={setArquivos} />
 
         {error && (
           <div className="flex items-center gap-2 text-danger text-[13px] bg-danger-soft rounded-lg px-3 py-2">

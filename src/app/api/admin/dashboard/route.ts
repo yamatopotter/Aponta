@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
   const [
     justificativasPorStatus,
     justificativasPorTipo,
+    tiposJustificativa,
     chamadosPorStatus,
     chamadosRespondidos,
     ocorrenciasPorDepartamento,
@@ -41,27 +42,30 @@ export async function GET(req: NextRequest) {
     funcionariosAtivos,
   ] = await Promise.all([
     prisma.justificativa.groupBy({ by: ['status'], where: { createdAt: { gte: inicio, lte: fim } }, _count: true }),
-    prisma.justificativa.groupBy({ by: ['tipo'], where: { createdAt: { gte: inicio, lte: fim } }, _count: true }),
+    prisma.justificativa.groupBy({ by: ['tipoId'], where: { createdAt: { gte: inicio, lte: fim } }, _count: true }),
+    prisma.tipoJustificativa.findMany({ select: { id: true, label: true } }),
     prisma.chamado.groupBy({ by: ['status'], where: { createdAt: { gte: inicio, lte: fim } }, _count: true }),
     prisma.chamado.findMany({
       where: { createdAt: { gte: inicio, lte: fim }, respondidoEm: { not: null } },
       select: { createdAt: true, respondidoEm: true },
     }),
     prisma.justificativa.findMany({
-      where: { createdAt: { gte: inicio, lte: fim }, tipo: { in: ['FALTA', 'ATRASO'] } },
+      where: { createdAt: { gte: inicio, lte: fim }, tipo: { contaTopDepartamentos: true } },
       select: { employee: { select: { departamento: { select: { nome: true } } } } },
     }),
     prisma.justificativa.groupBy({
       by: ['employeeId'],
       where: {
         createdAt: { gte: inicio, lte: fim },
-        tipo: { in: ['FALTA', 'ATRASO', 'SEM_SAIDA'] },
+        tipo: { contaPendenciaRecorrente: true },
       },
       _count: true,
     }),
     prisma.folhaConfig.findUnique({ where: { id: 1 } }),
     prisma.employee.count({ where: { ativo: true } }),
   ]);
+
+  const labelPorTipoId = new Map(tiposJustificativa.map((t) => [t.id, t.label]));
 
   // Tempo médio de resposta de chamados (em horas), sobre os já respondidos no período.
   const temposRespostaHoras = chamadosRespondidos.map(
@@ -113,7 +117,10 @@ export async function GET(req: NextRequest) {
     periodo,
     intervalo: { inicio: inicio.toISOString(), fim: fim.toISOString() },
     justificativasPorStatus: justificativasPorStatus.map((s) => ({ status: s.status, quantidade: s._count })),
-    justificativasPorTipo: justificativasPorTipo.map((t) => ({ tipo: t.tipo, quantidade: t._count })),
+    justificativasPorTipo: justificativasPorTipo.map((t) => ({
+      tipo: labelPorTipoId.get(t.tipoId) ?? t.tipoId,
+      quantidade: t._count,
+    })),
     chamadosPorStatus: chamadosPorStatus.map((s) => ({ status: s.status, quantidade: s._count })),
     tempoMedioRespostaHoras,
     chamadosRespondidosNoPeriodo: chamadosRespondidos.length,

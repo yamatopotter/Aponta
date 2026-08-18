@@ -21,7 +21,7 @@ export type ChamadoAdmin = {
   aguardandoResposta: boolean;
   createdAt: string;
   employee: { nome: string; cargo: string | null; unidade: string | null };
-  anexos: { id: string; nomeArquivo: string }[];
+  anexos: { id: string; nomeArquivo: string; tamanhoBytes: number | null }[];
 };
 
 type Interacao = {
@@ -138,9 +138,17 @@ export default function ChamadoDetailModal({
         <Box>
           {item.descricao}
           {item.anexos.map((a) => (
-            <div key={a.id} className="flex items-center gap-1 mt-1 text-xs text-secondary">
-              <Paperclip className="h-3 w-3" /> {a.nomeArquivo}
-            </div>
+            <a
+              key={a.id}
+              href={`/api/anexos/${a.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 mt-1 text-xs text-secondary underline underline-offset-2"
+            >
+              <Paperclip className="h-3 w-3 shrink-0" />
+              {a.nomeArquivo}
+              {a.tamanhoBytes && <span className="text-inksoft">({formatBytes(a.tamanhoBytes)})</span>}
+            </a>
           ))}
         </Box>
 

@@ -2,14 +2,15 @@
 
 import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Cable, CalendarClock, Mail } from 'lucide-react';
+import { Cable, CalendarClock, ListChecks, Mail } from 'lucide-react';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RhidSection from '@/components/admin/configuracoes/RhidSection';
 import FolhaSection from '@/components/admin/configuracoes/FolhaSection';
 import ZohoSection from '@/components/admin/configuracoes/ZohoSection';
+import TiposSection from '@/components/admin/configuracoes/TiposSection';
 
-const TABS = ['rhid', 'folha', 'zoho'] as const;
+const TABS = ['rhid', 'folha', 'tipos', 'zoho'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function ConfiguracoesPage() {
@@ -45,6 +46,10 @@ function ConfiguracoesContent() {
             <CalendarClock className="h-3.5 w-3.5" />
             Folha
           </TabsTrigger>
+          <TabsTrigger value="tipos" className="gap-1.5">
+            <ListChecks className="h-3.5 w-3.5" />
+            Tipos
+          </TabsTrigger>
           <TabsTrigger value="zoho" className="gap-1.5">
             <Mail className="h-3.5 w-3.5" />
             Zoho
@@ -56,6 +61,9 @@ function ConfiguracoesContent() {
         </TabsContent>
         <TabsContent value="folha" className="mt-0">
           <FolhaSection />
+        </TabsContent>
+        <TabsContent value="tipos" className="mt-0">
+          <TiposSection />
         </TabsContent>
         <TabsContent value="zoho" className="mt-0">
           <ZohoSection />

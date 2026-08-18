@@ -47,7 +47,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const justificativa = await prisma.justificativa.findUnique({
     where: { id: params.id },
-    include: { employee: true, anexos: true, decididoPor: { select: { id: true, name: true } } },
+    include: { employee: true, anexos: true, tipo: true, decididoPor: { select: { id: true, name: true } } },
   });
   if (!justificativa) return NextResponse.json({ error: 'Não encontrada.' }, { status: 404 });
 

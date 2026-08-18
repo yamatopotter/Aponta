@@ -99,20 +99,32 @@ enum JustificativaStatus {
   REPROVADO
 }
 
-enum TipoOcorrencia {
-  FALTA
-  ATRASO
-  SEM_SAIDA
-  AJUSTE
+// Cadastro configurável de tipos de justificativa (tela /admin/configuracoes,
+// aba Tipos) — antes era o enum fixo TipoOcorrencia (FALTA/ATRASO/SEM_SAIDA/
+// AJUSTE). Os dois flags abaixo controlam se ocorrências desse tipo entram
+// nas contagens do Dashboard (ver src/app/api/admin/dashboard/route.ts):
+// os 4 tipos originais foram migrados preservando exatamente o
+// comportamento de antes (Falta/Atraso contam nas duas métricas, Sem saída
+// só na de pendência recorrente, Ajuste em nenhuma das duas).
+model TipoJustificativa {
+  id                       String  @id @default(cuid())
+  label                    String  @unique
+  ativo                    Boolean @default(true)
+  ordem                    Int     @default(0)
+  contaTopDepartamentos    Boolean @default(true)
+  contaPendenciaRecorrente Boolean @default(true)
+
+  justificativas Justificativa[]
 }
 
 model Justificativa {
-  id             String         @id @default(cuid())
-  employee       Employee       @relation(fields: [employeeId], references: [id])
+  id             String            @id @default(cuid())
+  employee       Employee          @relation(fields: [employeeId], references: [id])
   employeeId     String
-  dataOcorrencia DateTime       @db.Date
-  tipo           TipoOcorrencia
-  isAjuste       Boolean        @default(false) // true = funcionário pediu ajuste em dia sem pendência detectada
+  dataOcorrencia DateTime          @db.Date
+  tipo           TipoJustificativa @relation(fields: [tipoId], references: [id])
+  tipoId         String
+  isAjuste       Boolean           @default(false) // true = funcionário pediu ajuste em dia sem pendência detectada
 
   issueDetectado String? // o que o motor de apuração do RHiD sinalizou (se houver)
   motivo         String
@@ -140,6 +152,7 @@ model Justificativa {
 
   @@index([employeeId, dataOcorrencia])
   @@index([status])
+  @@index([tipoId])
 }
 
 // ---------- Chamados com o RH ----------
