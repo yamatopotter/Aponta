@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatDataCurta } from '@/lib/utils';
 import type { JustificativaAdmin } from './JustificativaDetailModal';
 
 const STATUS_LABEL = { PENDENTE: 'Pendente', EM_ANALISE: 'Pendente', APROVADO: 'Aprovado', REPROVADO: 'Reprovado' };
@@ -46,7 +47,7 @@ export default function JustificativasTable({
               <div className="text-xs text-inksoft">{j.employee.cargo}</div>
             </TableCell>
             <TableCell>{j.tipo.label}</TableCell>
-            <TableCell>{new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')}</TableCell>
+            <TableCell>{formatDataCurta(j.dataOcorrencia)}</TableCell>
             <TableCell className="max-w-[220px] truncate">{j.motivo}</TableCell>
             <TableCell>{j.employee.unidade}</TableCell>
             <TableCell>

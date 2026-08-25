@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { formatDataCurta } from '@/lib/utils';
 import type { JustificativaAdmin } from './JustificativaDetailModal';
 
 const COLUMNS: { status: JustificativaAdmin['status'][]; title: string; dot: string }[] = [
@@ -53,7 +54,7 @@ export default function JustificativasKanban({
                   </div>
                   <div className="text-xs font-semibold">{j.motivo}</div>
                   <div className="text-[11px] text-inksoft mt-0.5">
-                    {new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')} · {j.employee.unidade}
+                    {formatDataCurta(j.dataOcorrencia)} · {j.employee.unidade}
                   </div>
                   {j.decididoPor && (
                     <div className="text-[11px] text-inksoft mt-1">Por {j.decididoPor.name}</div>

@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { formatBytes } from '@/lib/utils';
+import { formatBytes, formatDataCurta } from '@/lib/utils';
 
 export type JustificativaAdmin = {
   id: string;
@@ -74,7 +74,7 @@ export default function JustificativaDetailModal({
 
         <Label>Ocorrência</Label>
         <Box>
-          <b>{item.tipo.label}</b> — {new Date(item.dataOcorrencia).toLocaleDateString('pt-BR')}
+          <b>{item.tipo.label}</b> — {formatDataCurta(item.dataOcorrencia)}
           {item.issueDetectado && <div className="mt-1">{item.issueDetectado}</div>}
         </Box>
 

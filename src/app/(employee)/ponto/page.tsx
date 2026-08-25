@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import AnexoPicker from '@/components/AnexoPicker';
 import DivergenciasFolha from '@/components/DivergenciasFolha';
 import FolhaAssinatura from '@/components/FolhaAssinatura';
-import { formatBytes } from '@/lib/utils';
+import { formatBytes, formatDataCurta } from '@/lib/utils';
 import { useTiposJustificativa } from '@/lib/useTiposJustificativa';
 
 type Justificativa = {
@@ -116,7 +116,7 @@ export default function PontoPage() {
                 <li key={j.id} className="border border-line rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-inksoft">
-                      {new Date(j.dataOcorrencia).toLocaleDateString('pt-BR')} · {j.tipo.label}
+                      {formatDataCurta(j.dataOcorrencia)} · {j.tipo.label}
                     </span>
                     <Badge variant={STATUS_VARIANT[j.status]}>{STATUS_LABEL[j.status]}</Badge>
                   </div>

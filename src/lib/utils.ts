@@ -26,6 +26,17 @@ export function hojeCurto() {
   return new Date().toLocaleDateString('en-CA'); // yyyy-MM-dd em horário local
 }
 
+// Formata uma data "de calendário" (ex.: Justificativa.dataOcorrencia,
+// salva como meia-noite UTC) pro padrão brasileiro sem risco de cair um dia
+// por causa do fuso — nunca usar `new Date(iso).toLocaleDateString()` direto
+// pra isso: interpretado em UTC e formatado no fuso local (ex. UTC-3 no
+// Brasil), o dia 12 vira 11 na tela. Aqui é só manipulação de string, sem
+// passar por Date nenhuma.
+export function formatDataCurta(iso: string) {
+  const [ano, mes, dia] = paraDataCurta(iso).split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
 // Campos que já vêm em CADA dia de GET /apuracao_ponto (motor ACJEF do
 // RHiD) mas que o app não usava — não documentados no swagger, achados
 // inspecionando uma resposta real. `strHorarioContratualSimples` é o
