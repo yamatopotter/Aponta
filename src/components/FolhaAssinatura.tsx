@@ -6,7 +6,17 @@ import { ChevronLeft, ChevronRight, CircleCheck, TriangleAlert } from 'lucide-re
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn, descreverDivergencia, formatHorarioContratual, hojeCurto, paraDataCurta, type ApuracaoAlertaFields } from '@/lib/utils';
+import {
+  cn,
+  descreverDivergencia,
+  formatHora,
+  formatHorarioContratual,
+  hojeCurto,
+  marcacoesReais as marcacoesReaisDoDia,
+  paraDataCurta,
+  type ApuracaoAlertaFields,
+  type ApuracaoMarcacao,
+} from '@/lib/utils';
 
 type AnoMes = { ano: number; mes: number };
 
@@ -24,14 +34,12 @@ function addMeses({ ano, mes }: AnoMes, delta: number): AnoMes {
   return { ano: a, mes: m };
 }
 
-type Marcacao = { dateTime: string; _typeEntradaSaida: 'E' | 'S' };
 type ApuracaoDia = ApuracaoAlertaFields & {
   date: string;
   totalHorasTrabalhadas?: number;
   folga?: boolean;
   holiday?: string | null;
   possuiPendencias?: boolean;
-  listAfdtManutencao?: Marcacao[];
 };
 type FolhaResponse = {
   periodo: { ano: number; mes: number; inicio: string; fim: string };
@@ -47,16 +55,14 @@ function formatMinutos(min?: number) {
   return `${sinal}${Math.floor(abs / 60)}h${String(abs % 60).padStart(2, '0')}`;
 }
 
-function formatHora(iso: string) {
-  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
-
 // O RHiD às vezes já devolve em listAfdtManutencao as marcações PREVISTAS do
 // dia (a partir do horário contratual), não só as batidas de verdade — dá
-// pra ver isso quando o dia é hoje e alguma marcação tem horário no futuro.
-// Soma só pares Entrada→Saída já fechados; se sobrar uma entrada em aberto,
-// conta até agora (jornada "em andamento").
-function calcularMinutosTrabalhados(marcacoes: Marcacao[], agora: Date): number {
+// pra ver isso quando o dia é hoje e alguma marcação tem horário no futuro
+// (tratado em marcacoesReaisDoDia, em src/lib/utils.ts, junto com o caso de
+// dia passado com marcação faltando). Soma só pares Entrada→Saída já
+// fechados; se sobrar uma entrada em aberto, conta até agora (jornada "em
+// andamento").
+function calcularMinutosTrabalhados(marcacoes: ApuracaoMarcacao[], agora: Date): number {
   let total = 0;
   let entradaAberta: Date | null = null;
   for (const m of [...marcacoes].sort((a, b) => a.dateTime.localeCompare(b.dateTime))) {
@@ -208,14 +214,12 @@ export default function FolhaAssinatura() {
           const hoje = hojeCurto();
           const éHoje = dataCurta === hoje;
           const agora = new Date();
-          // Filtra marcações com horário no futuro — o RHiD chega a devolver aqui
-          // o horário contratual previsto do dia, não só o que já foi batido de
-          // verdade (ver calcularMinutosTrabalhados acima).
-          const marcacoesReais = éHoje
-            ? (dia.listAfdtManutencao ?? []).filter((m) => new Date(m.dateTime) <= agora)
-            : (dia.listAfdtManutencao ?? []);
-          const marcacoes = marcacoesReais.map((m) => formatHora(m.dateTime)).join(' · ');
-          const totalMinutos = éHoje ? calcularMinutosTrabalhados(marcacoesReais, agora) : dia.totalHorasTrabalhadas;
+          // Marcação preenchida automaticamente pelo RHiD (dia com batida faltando,
+          // ou turno futuro de hoje) fica de fora — só mostra o que foi batido de
+          // verdade (ver marcacoesReaisDoDia em src/lib/utils.ts).
+          const marcacoesDoDia = marcacoesReaisDoDia(dia, éHoje ? agora : undefined);
+          const marcacoes = marcacoesDoDia.map((m) => formatHora(m.dateTime)).join(' · ');
+          const totalMinutos = éHoje ? calcularMinutosTrabalhados(marcacoesDoDia, agora) : dia.totalHorasTrabalhadas;
           // O RHiD marca dia futuro (e às vezes o de hoje, antes de acabar) como "falta"
           // por não ter marcação ainda — não é uma pendência de verdade, então não alertamos.
           const diaFuturo = dataCurta > hoje;
