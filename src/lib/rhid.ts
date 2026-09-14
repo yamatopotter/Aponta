@@ -186,6 +186,27 @@ export async function listRhidDepartments(): Promise<RhidDepartment[]> {
   return data.records ?? [];
 }
 
+// Cadastro de tipos de justificativa do próprio RHiD (ex.: "Ferias",
+// "Medico", "Afastamento INSS", "ABONADO PELO GESTOR") — usado pelo
+// Relatório de Faltas pra deixar o RH escolher quais tipos não devem contar
+// como falta (ver src/lib/relatorioFaltas.ts). Não confundir com
+// TipoJustificativa do Aponta (prisma/schema.prisma) — são cadastros
+// independentes, um no RHiD e outro local.
+export interface RhidJustificationType {
+  id: number;
+  name: string;
+  abreviation?: string;
+  excluded?: boolean;
+  blocked?: boolean;
+}
+
+export async function listRhidJustificationTypes(): Promise<RhidJustificationType[]> {
+  const res = await rhidFetch('/justificationstype');
+  if (!res.ok) throw new Error(`Erro ao listar tipos de justificativa no RHiD (${res.status})`);
+  const data = await res.json();
+  return data.records ?? [];
+}
+
 /**
  * Sincroniza o cadastro local de empresas e departamentos (tabelas Empresa e
  * Departamento) a partir do RHiD. Precisa rodar ANTES de
@@ -237,6 +258,15 @@ export async function syncEmpresasEDepartamentos() {
 export interface ApuracaoMarcacao {
   dateTime: string; // ISO, ex. "2026-07-01T08:36:00"
   _typeEntradaSaida: 'E' | 'S';
+  // "O" = batida real do relógio (Original); "I" = inserida pelo motor do
+  // RHiD pra preencher um período sem marcação (falta em aberto ou já
+  // abonada/justificada — ver idJustification/abreviationJustification).
+  _typeRegister?: 'O' | 'I';
+  idJustification?: number | null;
+  // Nome do tipo de justificativa aplicado nessa marcação (ex.: "Ferias",
+  // "Medico", "ABONADO PELO GESTOR") — cadastro de tipos de justificativa do
+  // próprio RHiD, configurável por cliente (ver listRhidJustificationTypes).
+  abreviationJustification?: string | null;
   [key: string]: unknown;
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ClipboardList, LayoutDashboard, Menu, MessagesSquare, Settings, Shield, Signature, Users, LogOut, X } from 'lucide-react';
+import { ClipboardList, FileBarChart, LayoutDashboard, Menu, MessagesSquare, Settings, Shield, Signature, Users, LogOut, X } from 'lucide-react';
 
 import LogoMark from '@/components/LogoMark';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ const NAV_ATENDIMENTO = [
   { href: '/admin/chamados', label: 'Chamados RH', icon: MessagesSquare },
   { href: '/admin/folha', label: 'Folha de Ponto', icon: Signature },
   { href: '/admin/funcionarios', label: 'Funcionários', icon: Users },
+  { href: '/admin/relatorios/faltas', label: 'Relatório de Faltas', icon: FileBarChart },
 ];
 
 // Só nível ADMIN — ver enum NivelAdmin e requireNivelAdmin() em src/lib/auth.ts.
