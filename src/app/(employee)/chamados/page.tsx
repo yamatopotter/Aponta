@@ -383,12 +383,16 @@ function NovoChamadoModal({
       arquivos.forEach((f) => formData.append('anexos', f));
 
       const res = await fetch('/api/chamados', { method: 'POST', body: formData });
-      const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? 'Não foi possível enviar.');
+        // Resposta de erro pode não ser JSON (ex.: 413 do proxy quando o
+        // anexo passa do limite aceito) — não dá pra assumir res.json().
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? (res.status === 413 ? 'Anexo muito grande para envio.' : 'Não foi possível enviar.'));
         return;
       }
       onCreated();
+    } catch {
+      setError('Não foi possível enviar. Verifique sua conexão e tente novamente.');
     } finally {
       setLoading(false);
     }
