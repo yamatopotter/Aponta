@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, CircleCheck, TriangleAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   cn,
   descreverDivergencia,
+  éApenasHoraExtra,
   formatHora,
   formatHorarioContratual,
   hojeCurto,
@@ -39,7 +40,6 @@ type ApuracaoDia = ApuracaoAlertaFields & {
   totalHorasTrabalhadas?: number;
   folga?: boolean;
   holiday?: string | null;
-  possuiPendencias?: boolean;
 };
 type FolhaResponse = {
   periodo: { ano: number; mes: number; inicio: string; fim: string };
@@ -65,7 +65,8 @@ function formatMinutos(min?: number) {
 function calcularMinutosTrabalhados(marcacoes: ApuracaoMarcacao[], agora: Date): number {
   let total = 0;
   let entradaAberta: Date | null = null;
-  for (const m of [...marcacoes].sort((a, b) => a.dateTime.localeCompare(b.dateTime))) {
+  const validas = marcacoes.filter((m) => !Number.isNaN(new Date(m.dateTime).getTime()));
+  for (const m of validas.sort((a, b) => a.dateTime.localeCompare(b.dateTime))) {
     const t = new Date(m.dateTime);
     if (m._typeEntradaSaida === 'E') {
       entradaAberta = t;
@@ -81,6 +82,7 @@ function calcularMinutosTrabalhados(marcacoes: ApuracaoMarcacao[], agora: Date):
 // "Segunda, 27/07" — nome do dia por extenso, mais fácil de ler que a abreviação "seg.".
 function formatDataLonga(iso: string) {
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
   const diaSemana = d.toLocaleDateString('pt-BR', { weekday: 'long' }).replace('-feira', '');
   const diaSemanaCap = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
   const dataCurta = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -224,11 +226,13 @@ export default function FolhaAssinatura() {
           // por não ter marcação ainda — não é uma pendência de verdade, então não alertamos.
           const diaFuturo = dataCurta > hoje;
           const diaEmAberto = diaFuturo || éHoje;
-          // possuiPendencias/faltaDiaInteiro só cobrem problema que falta corrigir
-          // (falta/atraso). Hora extra vem à parte, em toolTipAlert/colorAlert, sem
-          // marcar possuiPendencias — não é uma pendência que precise de
-          // justificativa, só um aviso informativo (ex.: "Extra acima de 10 min").
-          const alerta = !diaEmAberto && (dia.possuiPendencias || dia.faltaDiaInteiro || !!dia.toolTipAlert);
+          // Hora extra é só um informativo, não uma pendência que precise de
+          // justificativa — mas o RHiD manda o mesmo possuiPendencias=true tanto
+          // pra isso quanto pra falta/atraso de verdade (ver éApenasHoraExtra em
+          // src/lib/utils.ts). Por isso separa em dois estilos: aviso (info, leve)
+          // pra hora extra, alerta (warn) pro resto.
+          const aviso = !diaEmAberto && éApenasHoraExtra(dia);
+          const alerta = !diaEmAberto && !aviso && (dia.possuiPendencias || dia.faltaDiaInteiro || !!dia.toolTipAlert);
           const situacao = dia.folga
             ? 'Folga'
             : dia.holiday
@@ -246,7 +250,10 @@ export default function FolhaAssinatura() {
           return (
             <div
               key={dia.date}
-              className={cn('border rounded-xl p-3 flex flex-col gap-1', alerta ? 'border-warn/40' : 'border-line')}
+              className={cn(
+                'border rounded-xl p-3 flex flex-col gap-1',
+                alerta ? 'border-warn/40' : aviso ? 'border-info/30' : 'border-line'
+              )}
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-bold text-sm">{formatDataLonga(dia.date)}</span>
@@ -260,6 +267,12 @@ export default function FolhaAssinatura() {
                 <div className="flex items-start gap-1.5 text-xs text-warn bg-warn-soft rounded-lg px-2.5 py-1.5 mt-1">
                   <TriangleAlert className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                   {descreverDivergencia(dia)}
+                </div>
+              )}
+              {aviso && (
+                <div className="flex items-start gap-1.5 text-xs text-info bg-info-soft rounded-lg px-2.5 py-1.5 mt-1">
+                  <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  {dia.toolTipAlert || 'Hora extra'}
                 </div>
               )}
             </div>

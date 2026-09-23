@@ -4,11 +4,10 @@ import { useEffect, useState } from 'react';
 import { Info, TriangleAlert } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { descreverDivergencia, hojeCurto, paraDataCurta, type ApuracaoAlertaFields } from '@/lib/utils';
+import { descreverDivergencia, éApenasHoraExtra, hojeCurto, paraDataCurta, type ApuracaoAlertaFields } from '@/lib/utils';
 
 type ApuracaoDia = ApuracaoAlertaFields & {
   date: string;
-  possuiPendencias?: boolean;
 };
 
 export default function DivergenciasFolha({
@@ -39,20 +38,25 @@ export default function DivergenciasFolha({
   const divergencias = dias
     .filter((d) => paraDataCurta(d.date) < hoje)
     .filter((d) => d.possuiPendencias || d.faltaDiaInteiro)
+    .filter((d) => !éApenasHoraExtra(d))
     .filter((d) => !justificadas.has(paraDataCurta(d.date)));
 
   const diaHoje = dias.find(
-    (d) => paraDataCurta(d.date) === hoje && (d.possuiPendencias || d.faltaDiaInteiro) && !justificadas.has(hoje)
+    (d) =>
+      paraDataCurta(d.date) === hoje &&
+      (d.possuiPendencias || d.faltaDiaInteiro) &&
+      !éApenasHoraExtra(d) &&
+      !justificadas.has(hoje)
   );
 
-  // Avisos informativos (ex.: "Extra acima de 10 min") que o RHiD manda em
-  // toolTipAlert sem marcar possuiPendencias/faltaDiaInteiro — não é um
-  // problema a corrigir, então não entra na lista de divergências nem tem
-  // botão de "Justificar". Já aparece com o mesmo dado no Espelho da folha
-  // (ver src/components/FolhaAssinatura.tsx); aqui é só um espelho leve pra
-  // quem está na aba Justificativas não deixar de ver.
+  // Avisos informativos (ex.: hora extra) que não são um problema a
+  // corrigir — não entram na lista de divergências nem têm botão de
+  // "Justificar", mesmo quando o RHiD manda `possuiPendencias=true` junto
+  // (ver éApenasHoraExtra em src/lib/utils.ts). Já aparece com o mesmo dado
+  // no Espelho da folha (ver src/components/FolhaAssinatura.tsx); aqui é só
+  // um espelho leve pra quem está na aba Justificativas não deixar de ver.
   const avisos = dias.filter(
-    (d) => paraDataCurta(d.date) < hoje && d.toolTipAlert && !d.possuiPendencias && !d.faltaDiaInteiro
+    (d) => paraDataCurta(d.date) < hoje && d.toolTipAlert && (éApenasHoraExtra(d) || (!d.possuiPendencias && !d.faltaDiaInteiro))
   );
 
   if (divergencias.length === 0 && !diaHoje && avisos.length === 0) return null;

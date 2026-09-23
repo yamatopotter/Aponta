@@ -601,6 +601,15 @@ comportamento do app:
   não. Usado tanto no alerta de `DivergenciasFolha` (justificativas) quanto
   no Espelho da folha (`FolhaAssinatura`), que também ganhou uma linha
   "Esperado: HH:mm–HH:mm" por dia via `formatHorarioContratual()`.
+  **Exceção a essa decisão**: hora extra é só um informativo, não uma
+  pendência real — mas o RHiD manda `possuiPendencias=true` pra ela do mesmo
+  jeito que manda pra falta/atraso de verdade (confirmado com dado real: um
+  dia só com hora extra, sem `atrasoEntrada`/`saidaAntecipada`/`faltaDiaInteiro`,
+  ainda vinha com `possuiPendencias=true`). `éApenasHoraExtra()` em
+  `src/lib/utils.ts` usa `horasExtrasCalculadas` (minutos, também do motor
+  ACJEF) pra identificar esse caso e tratá-lo como aviso (sem botão de
+  "Justificar" em `DivergenciasFolha`, estilo info em vez de warn no
+  Espelho) mesmo com `possuiPendencias=true`.
 - **Sem testes automatizados** configurados no momento — ao adicionar lógica
   de negócio sensível (ex.: regras de aprovação), considerar cobrir com
   testes antes de expandir mais regras.

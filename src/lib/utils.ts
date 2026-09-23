@@ -48,11 +48,29 @@ export type ApuracaoMarcacao = { dateTime: string; _typeEntradaSaida: 'E' | 'S';
 export type ApuracaoAlertaFields = {
   atrasoEntrada?: number; // minutos
   saidaAntecipada?: number; // minutos
+  horasExtrasCalculadas?: number; // minutos
   strHorarioContratualSimples?: string | null;
   toolTipAlert?: string | null;
   faltaDiaInteiro?: boolean;
+  possuiPendencias?: boolean;
   listAfdtManutencao?: ApuracaoMarcacao[];
 };
+
+// Hora extra não é um problema a corrigir, só um informativo — não deveria
+// puxar o dia pro fluxo de justificativa. Só que o RHiD manda o mesmo
+// `possuiPendencias=true` tanto pra isso quanto pra falta/atraso de verdade
+// (visto num dia real só com hora extra e nenhum outro campo de
+// atraso/saída/falta preenchido) — por isso não dá pra confiar só em
+// `possuiPendencias`; usamos `horasExtrasCalculadas` (minutos, também vindo
+// do RHiD) pra saber se o ÚNICO motivo da pendência é hora extra.
+export function éApenasHoraExtra(dia: ApuracaoAlertaFields): boolean {
+  return (
+    !dia.faltaDiaInteiro &&
+    !(dia.atrasoEntrada && dia.atrasoEntrada > 0) &&
+    !(dia.saidaAntecipada && dia.saidaAntecipada > 0) &&
+    !!(dia.horasExtrasCalculadas && dia.horasExtrasCalculadas > 0)
+  );
+}
 
 function primeiroHorarioEsperado(str?: string | null): string | null {
   if (!str) return null;
@@ -60,8 +78,14 @@ function primeiroHorarioEsperado(str?: string | null): string | null {
   return primeiraLinha?.split('-')[0]?.trim() || null;
 }
 
+// toLocaleTimeString lança RangeError pra data inválida (diferente de
+// toString, que devolve "Invalid Date") — guarda contra marcação com
+// dateTime ausente/malformado vindo do RHiD, pra não derrubar a tela inteira
+// por causa de um dia só.
 export function formatHora(iso: string) {
-  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '--:--';
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 // "08:00-12:00\r\n13:00-17:48" -> ["08:00","12:00","13:00","17:48"] — os
