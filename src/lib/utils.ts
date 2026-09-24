@@ -123,6 +123,20 @@ export function marcacoesReais(dia: ApuracaoAlertaFields, agora?: Date): Apuraca
   });
 }
 
+// ApuracaoDia.holiday do RHiD não é uma string (apesar do nome) — é o
+// registro completo do feriado cadastrado, só com o nome exibível em
+// `.name` (ver RhidFeriado em src/lib/rhid.ts). Renderizar o objeto direto
+// quebra a tela (React error #31: "objects are not valid as a react
+// child"); aceita string também pra não quebrar se algum dia a API mudar.
+export function nomeFeriado(holiday: unknown): string | null {
+  if (!holiday) return null;
+  if (typeof holiday === 'string') return holiday;
+  if (typeof holiday === 'object' && typeof (holiday as { name?: unknown }).name === 'string') {
+    return (holiday as { name: string }).name;
+  }
+  return null;
+}
+
 // Descreve POR QUE um dia está com pendência, com o máximo de precisão que
 // os dados permitem. Importante: isso só formata a explicação — quem decide
 // SE o dia é uma divergência continua sendo `possuiPendencias`/

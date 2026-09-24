@@ -14,6 +14,7 @@ import {
   formatHorarioContratual,
   hojeCurto,
   marcacoesReais as marcacoesReaisDoDia,
+  nomeFeriado,
   paraDataCurta,
   type ApuracaoAlertaFields,
   type ApuracaoMarcacao,
@@ -39,7 +40,7 @@ type ApuracaoDia = ApuracaoAlertaFields & {
   date: string;
   totalHorasTrabalhadas?: number;
   folga?: boolean;
-  holiday?: string | null;
+  holiday?: unknown; // objeto do RHiD, não string — usar nomeFeriado() pra exibir
 };
 type FolhaResponse = {
   periodo: { ano: number; mes: number; inicio: string; fim: string };
@@ -233,10 +234,11 @@ export default function FolhaAssinatura() {
           // pra hora extra, alerta (warn) pro resto.
           const aviso = !diaEmAberto && éApenasHoraExtra(dia);
           const alerta = !diaEmAberto && !aviso && (dia.possuiPendencias || dia.faltaDiaInteiro || !!dia.toolTipAlert);
+          const feriado = nomeFeriado(dia.holiday);
           const situacao = dia.folga
             ? 'Folga'
-            : dia.holiday
-              ? dia.holiday
+            : feriado
+              ? feriado
               : diaFuturo
                 ? 'Ainda não ocorreu'
                 : marcacoes
@@ -246,7 +248,7 @@ export default function FolhaAssinatura() {
                     : dia.faltaDiaInteiro
                       ? 'Falta'
                       : 'Sem marcação';
-          const horarioEsperado = !dia.folga && !dia.holiday ? formatHorarioContratual(dia.strHorarioContratualSimples) : null;
+          const horarioEsperado = !dia.folga && !feriado ? formatHorarioContratual(dia.strHorarioContratualSimples) : null;
           return (
             <div
               key={dia.date}

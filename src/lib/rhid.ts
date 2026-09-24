@@ -270,6 +270,17 @@ export interface ApuracaoMarcacao {
   [key: string]: unknown;
 }
 
+// Registro de feriado cadastrado no RHiD, como devolvido em ApuracaoDia.holiday
+// — não documentado no swagger, achado inspecionando o erro de renderização
+// citado acima. Só `name` é usado hoje; o resto fica disponível via index
+// signature pra quem precisar (ex.: `everyYear`).
+export interface RhidFeriado {
+  id?: number;
+  name?: string;
+  dateStr?: string;
+  [key: string]: unknown;
+}
+
 // Campos confirmados contra uma resposta real do /apuracao_ponto (ver
 // docs/integrations/rhid-swagger.json — a doc só documenta um subconjunto
 // ilustrativo; o motor ACJEF retorna ~100 campos por dia). Os usados na tela
@@ -284,7 +295,11 @@ export interface ApuracaoDia {
   horasExtrasCalculadas?: number; // minutos
   faltaDiaInteiro?: boolean;
   folga?: boolean;
-  holiday?: string | null;
+  // Apesar do nome, o RHiD não manda uma string aqui — manda o registro
+  // completo do feriado cadastrado (visto num erro real de renderização,
+  // "React error #31: object with keys {listIdPerson, name, dateStr, ...}").
+  // `name` é o campo com o nome exibível; ver nomeFeriado() em src/lib/utils.ts.
+  holiday?: RhidFeriado | null;
   compensado?: boolean;
   possuiPendencias?: boolean; // RHiD já sinaliza dias com pendência de apuração
   toolTipAlert?: string | null; // explicação legível do alerta do dia, se houver
