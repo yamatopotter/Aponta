@@ -610,6 +610,20 @@ comportamento do app:
   ACJEF) pra identificar esse caso e tratá-lo como aviso (sem botão de
   "Justificar" em `DivergenciasFolha`, estilo info em vez de warn no
   Espelho) mesmo com `possuiPendencias=true`.
+- **`ApuracaoDia.holiday` do RHiD é um objeto, não uma string** — é o
+  registro completo do feriado cadastrado (`id`, `name`, `dateStr`,
+  `everyYear` etc.). Renderizar direto no JSX derruba a tela com React error
+  #31. Use sempre `nomeFeriado()` (`src/lib/utils.ts`) pra obter o nome
+  exibível; o tipo está em `RhidFeriado` (`src/lib/rhid.ts`).
+- **Datas inválidas vindas do RHiD não podem derrubar a tela**:
+  `toLocaleTimeString`/`toLocaleDateString` lançam `RangeError` pra
+  `Invalid Date` (diferente de `toString`). `formatHora()` e os helpers de
+  data do Espelho já guardam contra isso — mantenha o padrão ao formatar
+  qualquer data/hora de marcação.
+- **Formulários com anexo (justificativa/chamado) não assumem resposta
+  JSON** — quando um proxy rejeita o upload (ex.: 413 do nginx), o corpo é
+  HTML e `res.json()` lançava sem captura, deixando o usuário sem
+  mensagem. Os handlers de submit tratam erro não-JSON e falha de rede.
 - **Sem testes automatizados** configurados no momento — ao adicionar lógica
   de negócio sensível (ex.: regras de aprovação), considerar cobrir com
   testes antes de expandir mais regras.

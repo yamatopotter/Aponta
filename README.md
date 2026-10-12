@@ -210,6 +210,12 @@ container (ver `docker-entrypoint.sh`):
    mas não é estritamente exigido pelo app: o cookie de sessão só fica
    `secure` quando a requisição realmente chega em HTTPS (via
    `X-Forwarded-Proto`), então funciona em HTTP puro pra teste inicial.
+   **Limite de upload**: o app aceita até 5 anexos de 10MB cada por envio
+   (justificativa ou chamado), mas o nginx limita o corpo da requisição a
+   1MB por padrão e rejeita com 413 antes de chegar no app. Ajuste no bloco
+   `server`/`location` que faz proxy pro app, ex.: `client_max_body_size 55M;`
+   (outros proxies têm equivalente — Caddy `request_body max_size`, Traefik
+   `buffering.maxRequestBodyBytes`).
 5. **Volume persistente para `uploads/`** — já vem configurado no
    `docker-compose.prod.yml` (`aponta_uploads`), mas se for rodar sem esse
    compose (ex.: outro orquestrador), não esquecer: sem isso, todo anexo de
