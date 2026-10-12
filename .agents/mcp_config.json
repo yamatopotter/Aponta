@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "nextjs": { "command": "npx", "args": ["-y", "next-devtools-mcp@latest"] },
+    "shadcn": { "command": "npx", "args": ["-y", "@jpisnice/shadcn-ui-mcp-server@latest"] },
+    "tailwindcss": { "command": "npx", "args": ["-y", "tailwindcss-mcp-server"] },
+    "chrome-devtools": { "command": "npx", "args": ["-y", "chrome-devtools-mcp@latest"] },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://evora:evora@localhost:5432/evora_ponto?schema=public"
+      ]
+    },
+    "github": { "command": "bash", "args": [".agents/mcp/github.sh"] }
+  }
+}
